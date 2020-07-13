@@ -1,0 +1,19 @@
+# vtk DataFile Version 4.2
+written by meshio v4.0.16
+ASCII
+DATASET UNSTRUCTURED_GRID
+POINTS 5 double
+-1.0 -1.0 0.0 1.0 -1.0 0.0 1.0 1.0 0.0 -1.0 1.0 0.0 2.0 0.0 0.0
+CELLS 2 9
+4
+0
+1
+2
+3
+3
+1
+2
+4
+CELL_TYPES 2
+9
+5
