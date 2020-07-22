@@ -1,6 +1,6 @@
 import meshio
 import numpy as np
-from helpers import getNormals, getAbsNormals, getNeighbours, extrudePoints
+from helpers import getNormals, getAbsNormals, getNeighbours, extrudePoints, getNeighboursV3
 
 # testP1 = np.array([[0.5, 0.5, 0.5], [0.1, 0.7, 0.4], [0.2, 1.1, 0.6], [0.6, 1.2, 0.7]])
 # testP2 = np.array([[0.5, 0.5, 0.5], [0.6, 1.2, 0.7], [0.9, 0.9, 0.8], [1.1, 0.6, 0.6]])
@@ -34,6 +34,48 @@ for cell in surfaceMesh.cells:
 
 ##get surface points##
 surfacePoints = surfaceMesh.points
+
+
+
+## get relevant points (negihbours and also diagonals in case M < 5) ##
+P1 = 10
+neighbours = np.array([], dtype=np.int)
+directNeighbours = np.array([], dtype=np.int)
+diagonals = np.array([], dtype=np.int)
+## check valence ##
+v = 0
+for cell in triangle_cells:
+    if P1 in cell:
+        v+=1
+for cell in quad_cells:
+    if P1 in cell:
+        v+=1
+if v > 4:
+    neighbours = getNeighbours(P1, triangle_cells, quad_cells)
+elif v == 3:
+    neighbours = getNeighbours(P1, triangle_cells, quad_cells)
+elif v == 4:
+    ## get direct neigbours and diagonals seperately ##
+    for cell in quad_cells:
+        if P1 in cell:
+            cellIndex = np.where(cell == P)
+            cellIndex = cellIndex[0][0]
+            directNeighbours = np.append(directNeighbours, [cell[(cellIndex-1)%4], cell[(cellIndex+1)%4]])
+            diagonals = np.append(diagonals, cell[(cellIndex+2)%4])
+    for cell in triangle_cells:
+        if P1 in cell:
+            directNeighbours = np.append(directNeighbours, cell)
+
+
+# cell1 = np.array([0, 1, 2])
+# cell2 = np.array([3, 2, 5])
+# mask = np.in1d(cell1, cell2)
+# print(mask)
+# print(np.sum(mask))
+
+
+# P10neighbours = getNeighbours(30, triangle_cells, quad_cells)
+# print(P10neighbours)
 
 #
 # P1 = 10
@@ -71,21 +113,22 @@ surfacePoints = surfaceMesh.points
 # print(P10neighbours)
 #
 
-
-##get layer 1 points##
-l1_points = extrudePoints(surfacePoints, triangle_cells, quad_cells, t)
-
-##assemble voxel points##
-l1_voxelPoints = np.concatenate((surfacePoints, l1_points))
-
-##assemble layer 1 cells##
-nSurfacePoints = len(surfacePoints)
-l1_triangle_cells = triangle_cells + nSurfacePoints
-l1_quad_cells = quad_cells + nSurfacePoints
-
-##assemble voxels##
-l1_voxels = [["wedge", np.concatenate((triangle_cells, l1_triangle_cells),axis=1)], ["hexahedron", np.concatenate((quad_cells, l1_quad_cells),axis=1)]]
-
-##export mesh##
-l1_mesh = meshio.Mesh(points = l1_voxelPoints, cells = l1_voxels)
-meshio.write("./output/normalExtrudeAll2.vtk", l1_mesh, file_format="vtk", binary=False)
+#
+# ##get layer 1 points##
+# l1_points = extrudePoints(surfacePoints, triangle_cells, quad_cells, t)
+#
+# ##assemble voxel points##
+# l1_voxelPoints = np.concatenate((surfacePoints, l1_points))
+#
+# ##assemble layer 1 cells##
+# nSurfacePoints = len(surfacePoints)
+# l1_triangle_cells = triangle_cells + nSurfacePoints
+# l1_quad_cells = quad_cells + nSurfacePoints
+#
+# ##assemble voxels##
+# l1_voxels = [["wedge", np.concatenate((triangle_cells, l1_triangle_cells),axis=1)], ["hexahedron", np.concatenate((quad_cells, l1_quad_cells),axis=1)]]
+#
+# ##export mesh##
+# l1_mesh = meshio.Mesh(points = l1_voxelPoints, cells = l1_voxels)
+# meshio.write("./output/normalExtrudeAll2.vtk", l1_mesh, file_format="vtk", binary=False)
+#
