@@ -2,6 +2,8 @@ import meshio
 import numpy as np
 # import math
 from helpers import getNormals, getAbsNormals, getNeighbours, extrudePoints, getNeighboursV3, getNeighboursV4, getVertexNormal
+from sympy import * # symbols, Eq, solve, Matrix
+# import sympy
 
 # testP1 = np.array([[0.5, 0.5, 0.5], [0.1, 0.7, 0.4], [0.2, 1.1, 0.6], [0.6, 1.2, 0.7]])
 # testP2 = np.array([[0.5, 0.5, 0.5], [0.6, 1.2, 0.7], [0.9, 0.9, 0.8], [1.1, 0.6, 0.6]])
@@ -49,29 +51,49 @@ for cell in triangle_cells:
 for cell in quad_cells:
     if P1 in cell:
         v+=1
-print("valence", v)
+# print("valence", v)
 r_xi = np.zeros([3, 1])
 r_xi_1 = np.zeros([3, v])
 r_0 = surfacePoints[P1]
 # print(r_xi)
-print("P1", r_0)
+# print("P1", r_0)
 P1neighbours = getNeighbours(P1, triangle_cells, quad_cells)
-print("neighbours", P1neighbours)
+# print("neighbours", P1neighbours)
 for i, P in enumerate(P1neighbours):
     r_xi_1[:, i] = surfacePoints[P]
-print("xi", r_xi_1)
-print("neighbour 0", surfacePoints[8])
-print("neighbour 1", surfacePoints[9])
-print("neighbour 2", surfacePoints[11])
-print("neighbour 3", surfacePoints[220])
-print("neighbour 4", surfacePoints[221])
-r_xi_1 = r_xi_1 - np.vstack(r_0)
-print("xi-r", r_xi_1)
+# print("xi", r_xi_1)
+# print("neighbour 0", surfacePoints[8])
+# print("neighbour 1", surfacePoints[9])
+# print("neighbour 2", surfacePoints[11])
+# print("neighbour 3", surfacePoints[220])
+# print("neighbour 4", surfacePoints[221])
+# r_xi_1 = r_xi_1 - np.vstack(r_0)
+# print("xi-r", r_xi_1)
 theta_m = np.zeros([v, 1])
-print("theta_m ini", theta_m)
+# print("theta_m ini", theta_m)
 for i in range(v):
     theta_m[i] = np.cos((i * 2 * np.pi) / v)
-print("theta_m", theta_m)
+# print("theta_m", theta_m)
+
+M = Matrix(r_xi_1)
+x, y, z = symbols('x y z')
+r = Matrix([[x], [y], [z]])
+# print(M[:, 1])
+for i in range(v):
+    M[:, i] -= r
+print(M)
+# cosTheta_m = np.zeros([v, 1])
+# for i in range(v):
+#     theta_m
+#     cosTheta_m[i] = np.cos()
+theta_m = Matrix(theta_m)
+print(theta_m)
+# f_xi = (2 / v) * M * theta_m
+f_xi = M * theta_m
+print(f_xi)
+# cosTheta_m = Matrix( symarray('b', (3,4)) )
+https://stackoverflow.com/questions/59430237/python-how-to-multiply-matrix-with-symbols-and-0s
+
 
 
 #
