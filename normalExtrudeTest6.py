@@ -56,7 +56,7 @@ r_xi = np.zeros([3, 1])
 r_xi_1 = np.zeros([3, v])
 r_0 = surfacePoints[P1]
 # print(r_xi)
-# print("P1", r_0)
+print("P1", r_0)
 P1neighbours = getNeighbours(P1, triangle_cells, quad_cells)
 # print("neighbours", P1neighbours)
 for i, P in enumerate(P1neighbours):
@@ -92,7 +92,6 @@ print(theta_m)
 f_xi = M * theta_m
 print(f_xi)
 # cosTheta_m = Matrix( symarray('b', (3,4)) )
-https://stackoverflow.com/questions/59430237/python-how-to-multiply-matrix-with-symbols-and-0s
 
 
 
