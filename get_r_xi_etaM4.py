@@ -188,6 +188,28 @@ else:
     neighbours_and_diagonals = np.sort(np.concatenate((P1neighbours, P1diagonals)))
     print("neighbours_and_diagonals ", neighbours_and_diagonals)
     print("neighbours_and_diagonals size ", neighbours_and_diagonals.size)
+    r_xi_eta_1 = np.zeros([3, v_hat])
+    for i, P in enumerate(neighbours_and_diagonals):
+        r_xi_eta_1[:, i] = surfacePoints[P]
+    print("r_xi_eta_1", r_xi_eta_1)
+
+    cos_theta_hat_m = np.zeros([v_hat, 1])
+    sin_theta_hat_m = np.zeros([v_hat, 1])
+    for i in range(v_hat):
+        cos_theta_hat_m[i] = np.cos(((i + 0.5) * 2 * np.pi) / v_hat)
+        sin_theta_hat_m[i] = np.sin(((i + 0.5) * 2 * np.pi) / v_hat)
+    print("cos_theta_hat_m", cos_theta_hat_m)
+    print("sin_theta_hat_m", sin_theta_hat_m)
+    xi_eta_trig_term = cos_theta_hat_m * sin_theta_hat_m
+    print("sum: ", np.sum(xi_eta_trig_term))
+
+    r_xi_eta = (2 / v_hat) * np.dot(r_xi_eta_1, xi_eta_trig_term)
+    print("r_xi_eta: ", r_xi_eta)
+
+# get r_zeta
+#get growth distribution
+d1 = 0.1
+d2 = 0.12
 
 
 

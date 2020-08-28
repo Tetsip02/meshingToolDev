@@ -39,13 +39,15 @@ def getNeighbours(P, triangle_cells, quad_cells):
 
     return neighbours
 
-def extrudePoints(surfacePoints, triangle_cells, quad_cells, t):
+def extrudePoints(surfacePoints, triangle_cells, quad_cells, t, flip = 0):
     ##initialize layer 1 points##
     l1_points = np.empty(surfacePoints.shape)
     ##get layer 1 points##
     for cell in triangle_cells:
         cellPoints = np.array([surfacePoints[cell[0]], surfacePoints[cell[1]], surfacePoints[cell[2]]])
         cellNormal = getNormals(cellPoints)
+        if flip == 1:
+            cellNormal = cellNormal * (-1)
         l1_cellPoints = cellPoints + t * cellNormal
         l1_points[cell[0]] = l1_cellPoints[0]
         l1_points[cell[1]] = l1_cellPoints[1]
@@ -53,6 +55,8 @@ def extrudePoints(surfacePoints, triangle_cells, quad_cells, t):
     for cell in quad_cells:
         cellPoints = np.array([surfacePoints[cell[0]], surfacePoints[cell[1]], surfacePoints[cell[2]], surfacePoints[cell[3]]])
         cellNormal = getNormals(cellPoints)
+        if flip == 1:
+            cellNormal = cellNormal * (-1)
         l1_cellPoints = cellPoints + t * cellNormal
         l1_points[cell[0]] = l1_cellPoints[0]
         l1_points[cell[1]] = l1_cellPoints[1]
@@ -143,3 +147,35 @@ def getVertexNormal(P, surfacePoints, triangle_cells, quad_cells):
     nVertex = nVertex / norm
 
     return nVertex
+
+def read_surface(surfaceFile):
+    ## write triangle cells, quad cells and surface points in numpy arrays ##
+    surfaceMesh = meshio.read(surfaceFile)
+
+    ##get cells##
+    triangle_cells = np.array([])
+    quad_cells = np.array([])
+    for cell in surfaceMesh.cells:
+        if cell.type == "triangle":
+            if triangle_cells.size == 0:
+                triangle_cells = cell.data
+            else:
+                triangle_cells = np.concatenate((triangle_cells, cell.data))
+            # print(cell.data)
+        elif cell.type == "quad":
+            if quad_cells.size == 0:
+                quad_cells = cell.data
+            else:
+                quad_cells = np.concatenate((quad_cells, cell.data))
+
+    ##get surface points##
+    surfacePoints = surfaceMesh.points
+
+    return triangle_cells, quad_cells, surfacePoints
+
+def build_ref_mesh_points(surface_points, surface_triangles, surface_quads, d1, d2, flip = 0):
+
+    level2 = extrudePoints(surface_points, surface_triangles, surface_quads, d1, flip)
+    level3 = extrudePoints(level2, surface_triangles, surface_quads, d2, flip)
+
+    return surface_points, level2, level3
