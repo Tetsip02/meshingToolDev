@@ -27,18 +27,34 @@ meshio.write("./output/ref_mesh_test2.msh", mesh_test, file_format="gmsh22", bin
 
 # fix 1: change orientation
 level2_triangles_fix = level2_triangles.copy()
-level2_triangles_fix[:,[0, 2]] = level2_triangles_fix[:,[2, 0]]
+level2_triangles_fix[:,[1, 2]] = level2_triangles_fix[:,[2, 1]]
+level1_triangles_fix = level1_triangles.copy()
+level1_triangles_fix[:,[1, 2]] = level1_triangles_fix[:,[2, 1]]
 # level2_triangles_fix[:, 0], level2_triangles_fix[:, 2] = level2_triangles_fix[:, 2], level2_triangles_fix[:, 0].copy()
 # level2_triangles_fix.T[[0, 2]] = level2_triangles_fix.T[[2, 0]]
-print(level2_triangles[1:10, :])
-print(level2_triangles_fix[1:10, :])
+# print(level2_triangles[1:10, :])
+# print(level2_triangles_fix[1:10, :])
 # my_array[:,[0, 1]] = my_array[:,[1, 0]] #switch column 0 with column 1
 
 
 level2_quads_fix = level2_quads.copy()
-level2_quads_fix[:,[0, 3]] = level2_quads_fix[:,[3, 0]]
-level2_quads_fix[:,[1, 2]] = level2_quads_fix[:,[2, 1]]
+level2_quads_fix[:,[1, 3]] = level2_quads_fix[:,[3, 1]]
+level1_quads_fix = level1_quads.copy()
+level1_quads_fix[:,[1, 3]] = level1_quads_fix[:,[3, 1]]
+# level2_quads_fix[:,[1, 2]] = level2_quads_fix[:,[2, 1]]
+allPointsFix = np.concatenate((level1, level2))
 
-voxels1_fix = [["wedge", np.concatenate((level1_triangles, level2_triangles_fix),axis=1)], ["hexahedron", np.concatenate((level1_quads, level2_quads_fix),axis=1)]]
-mesh_test4 = meshio.Mesh(points = allPoints, cells = voxels1_fix)
+voxels1_fix = [["wedge", np.concatenate((level1_triangles_fix, level2_triangles_fix),axis=1)], ["hexahedron", np.concatenate((level1_quads_fix, level2_quads_fix),axis=1)]]
+mesh_test4 = meshio.Mesh(points = allPointsFix, cells = voxels1_fix)
 meshio.write("./output/ref_mesh_test4.msh", mesh_test4, file_format="gmsh22", binary=False)
+
+print("13", level1[13, :])
+print("209", level1[209, :])
+print("210", level1[210, :])
+print("211", level1[211, :])
+print("212", level1[212, :])
+print("211", level1[211, :])
+print("7", level1[7, :])
+print("6", level1[6, :])
+print(level1_quads[0:2, :])
+print(level1_triangles[0:2, :])
