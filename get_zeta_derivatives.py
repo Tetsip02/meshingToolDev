@@ -205,6 +205,10 @@ print("r_zeta_zeta", r_zeta_zeta[0:6, :])
 # > d = np.load('test3.npy')
 # > a == d
 # > array([ True,  True,  True,  True], dtype=bool)
+np.save('./dataOutput/faceTable.npy', faceTable)
+np.save('./dataOutput/level2FaceTable.npy', level2FaceTable)
+np.save('./dataOutput/vertexTable.npy', vertexTable)
+np.save('./dataOutput/level2VertexTable.npy', level2VertexTable)
 
 #######################################
 
