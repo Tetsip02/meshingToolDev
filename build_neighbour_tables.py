@@ -56,7 +56,7 @@ else:
     nDirectNeighbours = maxNeighbours
 diagonals = np.ndarray((nSurfacePoints, 8), dtype = object)
 nDiagonals = -np.ones((nSurfacePoints, 1), dtype = int)
-print(nDiagonals)
+# print(nDiagonals)
 
 
 ############################################################
@@ -164,8 +164,13 @@ for vertex in range(nSurfacePoints):
         directNeighbours[vertex, :] = directNeighboursTemp
 
 
-print(valence[960:999])
-print(directNeighbours[960:999, :])
-print(diagonals[960:999, :])
+# print(valence[960:999])
+# print(directNeighbours[960:999, :])
+# print(diagonals[960:999, :])
+
+np.save('./dataOutput/valenceTable.npy', valence)
+np.save('./dataOutput/directNeighboursTable.npy', directNeighbours)
+np.save('./dataOutput/diagonalsTable.npy', diagonals)
+np.save('./dataOutput/nDiagonalsTable.npy', nDiagonals)
 
 ###########################################################
