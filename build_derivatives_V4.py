@@ -67,13 +67,15 @@ for vertex in range(nSurfacePoints):
     if M > 4:
         # evaluate r_xi_xi
         r_xi_xi_trig_term = 4 * np.square(r_xi_trig_term) - 1
-        r_xi_xi_1 = np.reshape(np.dot(neighbourCoor, r_xi_xi_trig_term), (3, 1))
-        r_xi_xi[vertex, [[0], [1], [2]]] = (2 / M) * Matrix([r_xi_xi_1 - np.sum(r_xi_xi_trig_term) * Matrix([x, y, z])])
+        r_xi_xi[vertex, :] = (2 / M) * np.dot(neighbourCoor, r_xi_xi_trig_term)
+        # r_xi_xi_1 = np.reshape(np.dot(neighbourCoor, r_xi_xi_trig_term), (3, 1))
+        # r_xi_xi[vertex, [[0], [1], [2]]] = (2 / M) * Matrix([r_xi_xi_1 - np.sum(r_xi_xi_trig_term) * Matrix([x, y, z])])
 
         # evaluate r_eta_eta
         r_eta_eta_trig_term = 4 * np.square(r_eta_trig_term) - 1
-        r_eta_eta_1 = np.reshape(np.dot(neighbourCoor, r_eta_eta_trig_term), (3, 1))
-        r_eta_eta[vertex, [[0], [1], [2]]] = (2 / M) * Matrix([r_eta_eta_1 - np.sum(r_eta_eta_trig_term) * Matrix([x, y, z])])
+        r_eta_eta[vertex, :] = (2 / M) * np.dot(neighbourCoor, r_eta_eta_trig_term)
+        # r_eta_eta_1 = np.reshape(np.dot(neighbourCoor, r_eta_eta_trig_term), (3, 1))
+        # r_eta_eta[vertex, [[0], [1], [2]]] = (2 / M) * Matrix([r_eta_eta_1 - np.sum(r_eta_eta_trig_term) * Matrix([x, y, z])])
 
         # evaluate r_xi_eta
         r_xi_eta_trig_term = r_xi_trig_term * r_eta_trig_term
@@ -81,14 +83,14 @@ for vertex in range(nSurfacePoints):
 
     elif M == 4:
         # evaluate r_xi_xi
-        r_xi_xi_1 = np.reshape((neighbourCoor[:, 0] + neighbourCoor[:, 2]), (3, 1))
-        # print(neighbourCoor)
-        # print(r_xi_xiTemp1)
-        r_xi_xi[vertex, [[0], [1], [2]]] = Matrix([r_xi_xi_1 - 2 * Matrix([x, y, z])])
+        r_xi_xi[vertex, :] = neighbourCoor[:, 0] + neighbourCoor[:, 2]
+        # r_xi_xi_1 = np.reshape((neighbourCoor[:, 0] + neighbourCoor[:, 2]), (3, 1))
+        # r_xi_xi[vertex, [[0], [1], [2]]] = Matrix([r_xi_xi_1 - 2 * Matrix([x, y, z])])
 
         # evaluate r_eta_eta
-        r_eta_eta_1 = np.reshape((neighbourCoor[:, 1] + neighbourCoor[:, 3]), (3, 1))
-        r_eta_eta[vertex, [[0], [1], [2]]] = Matrix([r_eta_eta_1 - 2 * Matrix([x, y, z])])
+        r_eta_eta[vertex, :] = neighbourCoor[:, 1] + neighbourCoor[:, 3]
+        # r_eta_eta_1 = np.reshape((neighbourCoor[:, 1] + neighbourCoor[:, 3]), (3, 1))
+        # r_eta_eta[vertex, [[0], [1], [2]]] = Matrix([r_eta_eta_1 - 2 * Matrix([x, y, z])])
 
         # evaluate r_xi_eta
         M_hat = M + nDiagonals[vertex, 0]
@@ -110,7 +112,7 @@ for vertex in range(nSurfacePoints):
 
 
 ###################################################
-
+# build r_xi_xi
 
 
 #####################################################

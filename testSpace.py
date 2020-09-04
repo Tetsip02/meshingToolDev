@@ -1,6 +1,7 @@
 import meshio
 import numpy as np
 from helpers import *
+from sympy import *
 
 # x = np.eye(5)
 # # y = np.arange(5)
@@ -10,9 +11,15 @@ from helpers import *
 # print(z)
 # x[:, z:-(y)] += 10
 # print(x)
-
-x = np.array([[5, 4, 3], [6, 7, 8]])
-y = np.array([[0, 1, 2], [3, 4, 5]])
-print(x)
-print(y)
-print(x-y)
+x, y = symbols('x y')
+eq1 = Eq(2*x - y - 1, 0) # 2x -y -1 = 0
+eq2 = Eq(x + y - 5, 0)
+sol = solve((eq1, eq2),(x, y))
+print(eq1)
+# print(sol.keys())
+# print(sol.values())
+# print(sol.items())
+# # sol2 = np.array(sol.values())
+# sol2 = np.array(list(sol.values()))
+# print(sol2)
+# print(sol2.shape)
