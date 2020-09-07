@@ -137,10 +137,10 @@ g = r_xi[vertex, 0] * (r_eta[vertex, 1] * r_zeta[vertex, 2] - r_eta[vertex, 2] *
 g_square = g ** 2
 # print(g_square)
 
-coeff1 = (g_22 * g_33) / g_square
-coeff2 = (g_11 * g_33) / g_square
-coeff3 = -2 * ((g_12 * g_33) / g_square)
-coeff4 = (g_11 * g_22 - g_12 ** 2) / g_square
+c1 = (g_22 * g_33) / g_square
+c2 = (g_11 * g_33) / g_square
+c3 = -2 * ((g_12 * g_33) / g_square)
+c4 = (g_11 * g_22 - g_12 ** 2) / g_square
 # print("coeff1: ", coeff1)
 # print("coeff2: ", coeff2)
 # print("coeff3: ", coeff3)
@@ -149,22 +149,11 @@ coeff4 = (g_11 * g_22 - g_12 ** 2) / g_square
 # print("r_eta_eta",r_eta_eta[vertex, :])
 # print("r_xi_eta",r_xi_eta[vertex, :])
 # print("r_zeta_zeta",r_zeta_zeta[vertex, :])
-eq1 = Eq(coeff1 * r_xi_xi[vertex, 0] + coeff2 * r_eta_eta[vertex, 0] + coeff3 * r_xi_eta[vertex, 0] + coeff4 * r_zeta_zeta[vertex, 0], 0)
-eq2 = Eq(coeff1 * r_xi_xi[vertex, 1] + coeff2 * r_eta_eta[vertex, 1] + coeff3 * r_xi_eta[vertex, 1] + coeff4 * r_zeta_zeta[vertex, 1], 0)
-eq3 = Eq(coeff1 * r_xi_xi[vertex, 2] + coeff2 * r_eta_eta[vertex, 2] + coeff3 * r_xi_eta[vertex, 2] + coeff4 * r_zeta_zeta[vertex, 2], 0)
-sol1 = solve((eq1),(x))
-sol2 = solve((eq2),(y))
-sol3 = solve((eq3),(z))
-print(sol1)
-print(sol2)
-print(sol3)
+level2_it1_x = (c1 * r_xi_xi[vertex, :] + c2 * r_eta_eta[vertex, :] + c3 * r_xi_eta[vertex, :] + c4 * r_zeta_zeta[vertex, :]) / (2 * (c1 + c2 + c3 + c4))
+
 print(level2[vertex, :])
+print(level2_it1_x)
 
-level3_it1 = np.zeros((nSurfacePoints, 3))
-print(level3_it1)
-level3_it1[vertex, [[0], [1], [2]]] = np.array([sol1, sol2, sol3])
-print(level3_it1)
-
-print("r_xi_xi", r_xi_xi[0:100, :])
-print("r_eta_eta", r_eta_eta[0:100, :])
-print("r_zeta_zeta", r_zeta_zeta[0:100, :])
+# print("r_xi_xi", r_xi_xi[0:100, :])
+# print("r_eta_eta", r_eta_eta[0:100, :])
+# print("r_zeta_zeta", r_zeta_zeta[0:100, :])
