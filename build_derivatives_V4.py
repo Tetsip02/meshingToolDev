@@ -112,48 +112,36 @@ for vertex in range(nSurfacePoints):
 
 
 ###################################################
-# build r_xi_xi
+# build all tensors
 
-
-#####################################################
-# build tensors
-vertex = 0
-# print(r_xi[vertex, :])
-# print(r_eta[vertex, :])
-# print(r_zeta[vertex, :])
-g_11 = r_xi[vertex, 0] ** 2 + r_xi[vertex, 1] ** 2 + r_xi[vertex, 2] ** 2
-g_22 = r_eta[vertex, 0] ** 2 + r_eta[vertex, 1] ** 2 + r_eta[vertex, 2] ** 2
-g_33 = r_zeta[vertex, 0] ** 2 + r_zeta[vertex, 1] ** 2 + r_zeta[vertex, 2] ** 2
-g_12 = r_xi[vertex, 0] * r_eta[vertex, 0] + r_xi[vertex, 1] * r_eta[vertex, 1] + r_xi[vertex, 2] * r_eta[vertex, 2]
-# print(g_11)
-# print(g_22)
-# print(g_33)
-# print(g_12)
-# jacobian = np.concatenate((r_xi[vertex, [[0], [1], [2]]], r_eta[vertex, [[0], [1], [2]]]), axis = 0)
-# print(jacobian)
-# print(jacobian.shape)
-g = r_xi[vertex, 0] * (r_eta[vertex, 1] * r_zeta[vertex, 2] - r_eta[vertex, 2] * r_zeta[vertex, 1]) - r_xi[vertex, 1] * (r_eta[vertex, 0] * r_zeta[vertex, 2] - r_eta[vertex, 2] * r_zeta[vertex, 0]) + r_xi[vertex, 2] * (r_eta[vertex, 0] * r_zeta[vertex, 1] - r_eta[vertex, 1] * r_zeta[vertex, 0])
-# g = r_xi[vertex, 2] * (r_eta[vertex, 0] * r_zeta[vertex, 1] - r_eta[vertex, 1] * r_zeta[vertex, 0])
+g_11 = r_xi[: , 0] ** 2 + r_xi[: , 1] ** 2 + r_xi[: , 2] ** 2
+g_22 = r_eta[: , 0] ** 2 + r_eta[: , 1] ** 2 + r_eta[: , 2] ** 2
+g_33 = r_zeta[: , 0] ** 2 + r_zeta[: , 1] ** 2 + r_zeta[: , 2] ** 2
+g_12 = r_xi[: , 0] * r_eta[: , 0] + r_xi[: , 1] * r_eta[: , 1] + r_xi[: , 2] * r_eta[: , 2]
+g = r_xi[: , 0] * (r_eta[: , 1] * r_zeta[: , 2] - r_eta[: , 2] * r_zeta[: , 1]) - r_xi[: , 1] * (r_eta[: , 0] * r_zeta[: , 2] - r_eta[: , 2] * r_zeta[: , 0]) + r_xi[: , 2] * (r_eta[: , 0] * r_zeta[: , 1] - r_eta[: , 1] * r_zeta[: , 0])
 g_square = g ** 2
-# print(g_square)
-
 c1 = (g_22 * g_33) / g_square
 c2 = (g_11 * g_33) / g_square
 c3 = -2 * ((g_12 * g_33) / g_square)
 c4 = (g_11 * g_22 - g_12 ** 2) / g_square
-# print("coeff1: ", coeff1)
-# print("coeff2: ", coeff2)
-# print("coeff3: ", coeff3)
-# print("coeff4: ", coeff4)
-# print("r_xi_xi", r_xi_xi[vertex, :])
-# print("r_eta_eta",r_eta_eta[vertex, :])
-# print("r_xi_eta",r_xi_eta[vertex, :])
-# print("r_zeta_zeta",r_zeta_zeta[vertex, :])
-level2_it1_x = (c1 * r_xi_xi[vertex, :] + c2 * r_eta_eta[vertex, :] + c3 * r_xi_eta[vertex, :] + c4 * r_zeta_zeta[vertex, :]) / (2 * (c1 + c2 + c3 + c4))
+level2_it1 = (c1[: , None] * r_xi_xi + c2[: , None] * r_eta_eta + c3[: , None] * r_xi_eta + c4[: , None] * r_zeta_zeta) / (2 * (c1[: , None] + c2[: , None]))
+points_it1 = np.concatenate((level1, level2_it1))
+points_it1 = points_it1.astype('float64')
+points_it0 = np.concatenate((level1, level2))
+print(points_it1.dtype)
+print(points_it0.dtype)
+print(points_it1[4870:4880, :])
+print(points_it0[4870:4880, :])
 
-print(level2[vertex, :])
-print(level2_it1_x)
 
-# print("r_xi_xi", r_xi_xi[0:100, :])
-# print("r_eta_eta", r_eta_eta[0:100, :])
-# print("r_zeta_zeta", r_zeta_zeta[0:100, :])
+voxels1 = [["wedge", np.concatenate((level1_triangles, level2_triangles),axis=1)], ["hexahedron", np.concatenate((level1_quads, level2_quads),axis=1)]]
+# voxels2 = [["wedge", np.concatenate((level2_triangles, level3_triangles),axis=1)], ["hexahedron", np.concatenate((level2_quads, level3_quads),axis=1)]]
+# voxels1and2 = voxels1
+# voxels1and2.extend(voxels2)
+mesh_test1 = meshio.Mesh(points = points_it1, cells = voxels1)
+# mesh_test0 = meshio.Mesh(points = points_it0, cells = voxels1)
+# meshio.write("./output/ref_mesh_test2.vtk", mesh_test, file_format="vtk", binary=False)
+meshio.write("./output/layer1_it1Smoothing.vtk", mesh_test1, file_format="vtk", binary=False)
+# meshio.write("./output/layer1_noSmoothing.vtk", mesh_test0, file_format="vtk", binary=False)
+
+print(vertexTable[305:330, 7])
