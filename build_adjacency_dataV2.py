@@ -24,75 +24,177 @@ nQuadFaces = len(surface_quads)
 nFaces = nTriFaces + nQuadFaces
 
 
-# build faceIndices for each point
-triFaceIndices = [] # [nPoints, number_of_attached_triangle_faces]
-quadFaceIndices = [] # [nPoints, number_of_attached_quad_faces]
-for index in range(nPoints):
-    mask1 = np.isin(surface_triangles, index)
-    triFaceIndices.append(np.nonzero(mask1)[0])
-    mask2 = np.isin(surface_quads, index)
-    quadFaceIndices.append(np.nonzero(mask2)[0])
+# ######################################
+#
+# # build faceIndices for each point
+# triFaceIndices = [] # [nPoints, number_of_attached_triangle_faces]
+# quadFaceIndices = [] # [nPoints, number_of_attached_quad_faces]
+# directValence = [] # [nPoints, 1]
+# directNeighbours = []
+# for index in range(nPoints):
+#     # get face indices for each point split into quad and tri lists
+#     mask1 = np.isin(surface_triangles, index)
+#     triFaceIndices.append(np.nonzero(mask1)[0])
+#     mask2 = np.isin(surface_quads, index)
+#     quadFaceIndices.append(np.nonzero(mask2)[0])
+#
+#     # get total number of attached faces for each point = direct valence
+#     indexValence = len(np.nonzero(mask1)[0]) + len(np.nonzero(mask2)[0])
+#     directValence.append(indexValence)
+#
+#     # get relevant neighbour nodes used later for calculating derivatives
+#     # initialize direct neighbours for point index
+#     indexNeighbours = []
+#
+#     if indexValence > 4:
+#         # add all points of attached triangles
+#         for faceIndex in np.nonzero(mask1)[0]:
+#             indexNeighbours.extend(surface_triangles[faceIndex , :])
+#
+#         # add all points except diagonal from attached quads
+#         for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
+#             face = surface_quads[faceIndex, :]
+#             indexNeighbours.append(surface_quads[faceIndex, (pos - 1) % 4])
+#             indexNeighbours.append(surface_quads[faceIndex, (pos + 1) % 4])
+#
+#         # remove duplicate points ##
+#         indexNeighbours = list(set(indexNeighbours))
+#         # remove point itself from list of neighbours
+#         try:
+#             indexNeighbours.remove(index)
+#         except ValueError:
+#             pass
+#
+#     directNeighbours.append(indexNeighbours)
+#
+# # print(directNeighbours)
+# # print(len(directNeighbours))
+#
+#
+# ##########################################
 
+directNeighbours = []
+diagonalsTri = []
+diagonalsQuad = []
+simpleDiagonals = []
+interDiagonals = []
+
+index = 6
+mask1 = np.isin(surface_triangles, index)
+# triFaceIndices.append(np.nonzero(mask1)[0])
+print(np.nonzero(mask1))
+mask2 = np.isin(surface_quads, index)
+# quadFaceIndices.append(np.nonzero(mask2)[0])
+print(np.nonzero(mask2))
+print(surface_triangles[2, :])
+print(surface_quads[[1, 4, 18], :])
+directValence = len(np.nonzero(mask1)[0]) + len(np.nonzero(mask2)[0])
+print(directValence)
+
+if directValence == 4:
+    # add all points of attached triangles
+    for faceIndex, pos in zip(np.nonzero(mask1)[0], np.nonzero(mask1)[1]):
+        directNeighbours.extend(surface_triangles[faceIndex , :])
+
+    # find faces that share two nodes with attached triangles, if thats a triangle add to diagonals, if quad add mean of diagonals, skip for now
+
+    # seperate nodes of attached quad faces into direct neighbours and diagonals
+    for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
+        directNeighbours.append(surface_quads[faceIndex, (pos - 1) % 4])
+        directNeighbours.append(surface_quads[faceIndex, (pos + 1) % 4])
+        simpleDiagonals.append(surface_quads[faceIndex, (pos + 2) % 4])
+
+print(directNeighbours)
+print(simpleDiagonals)
+
+    # for f in range(nAttFaces):
+    #     fIndex = vertexTable[vertex, f + 8]
+    #     if faceTable[fIndex, 1] == 4:
+    #         pointPos = np.where(faceTable[fIndex, [2, 3, 4, 5]] == vertex)
+    #         pointPos = pointPos[0][0]
+    #         directNeighboursTemp = np.append(directNeighboursTemp, [faceTable[fIndex, ((pointPos - 1) % 4) + 2], faceTable[fIndex, ((pointPos + 1) % 4) + 2]])
+    #         diagonalsTemp = np.append(diagonalsTemp, faceTable[fIndex, ((pointPos + 2) % 4) + 2])
+    #     elif faceTable[fIndex , 1] == 3:
+    #         directNeighboursTemp = np.append(directNeighboursTemp, faceTable[fIndex, [2, 3, 4]])
+    #         # get faces that share two vertices with faceTable[fIndex , 1]
+    #         for i, diagCell in enumerate(faceTable[:, [2, 3, 4, 5]]):
+    #             if diagCell[3] == -1:
+    #                 diagCell = np.delete(diagCell, 3)
+    #             mask = np.in1d(diagCell, faceTable[fIndex, [2, 3, 4, 5]]) # check if elements in arg1 are present in arg2, returns vector of length arg1
+    #             if np.sum(mask) == 2 and vertex not in diagCell:
+    #                 diagonalsTemp = np.append(diagonalsTemp, diagCell)
+
+
+    # # remove duplicate points
+    # directNeighboursTemp = np.unique(directNeighboursTemp)
+    # # remove P itself from list of neighbours
+    # directNeighboursTemp = np.delete(directNeighboursTemp, np.where(directNeighboursTemp == vertex))
+    # # remove direct neighbours from list of diagonals
+    # diagonalsTemp = np.setdiff1d(diagonalsTemp, directNeighboursTemp)
+    #
+    # #set total valence for vertex
+    # valence[vertex] = 4
+    # #set number of diagonals for vertex
+    # nDiagonals[vertex] = len(diagonalsTemp)
+    #
+    # for i in range(4, nDirectNeighbours):
+    #     directNeighboursTemp = np.append(directNeighboursTemp, -1)
+    #
+    # if len(diagonalsTemp) < 8:
+    #     for i in range(8 -len(diagonalsTemp)):
+    #         diagonalsTemp = np.append(diagonalsTemp, -1)
+    #
+    # directNeighbours[vertex, :] = directNeighboursTemp
+    # diagonals[vertex, :] = diagonalsTemp
+
+
+
+
+    # mylist = list(set(directNeighbours))
+    # print(mylist)
+    # test = np.array(directNeighbours, dtype = object)
+    # print(directNeighbours)
+    # directNeighbours = np.ndarray.flatten(directNeighbours)
+
+    # for f in range(nAttFaces):
+    #     fIndex = vertexTable[vertex, f + 8]
+    #     if faceTable[fIndex, 1] == 3:
+    #         directNeighboursTemp = np.append(directNeighboursTemp, faceTable[fIndex, [2, 3, 4]])
+    #     elif faceTable[fIndex , 1] == 4:
+    #         pointPos = np.where(faceTable[fIndex, [2, 3, 4, 5]] == vertex)
+    #         pointPos = pointPos[0][0]
+    #         directNeighboursTemp = np.append(directNeighboursTemp, [faceTable[fIndex, ((pointPos - 1) % 4) + 2], faceTable[fIndex, ((pointPos + 1) % 4) + 2]])
+    # # remove duplicate points ##
+    # directNeighboursTemp = np.unique(directNeighboursTemp)
+    # # remove P itself from list of neighbours
+    # directNeighboursTemp = np.delete(directNeighboursTemp, np.where(directNeighboursTemp == vertex))
+    #
+    #
+    # valence[vertex] = len(directNeighboursTemp)
+    #
+    # emptyEntries = nDirectNeighbours - len(directNeighboursTemp)
+    # if emptyEntries > 0:
+    #     for i in range(emptyEntries):
+    #         directNeighboursTemp = np.append(directNeighboursTemp, -1)
+    #
+    # directNeighbours[vertex, :] = directNeighboursTemp
+
+
+# print(directValence[0:20])
 
 
 # nTriIndices = [len(x) for x in triFaceIndices]
 # nQuadIndices = [len(x) for x in quadFaceIndices]
-nTriIndices = np.array([len(x) for x in triFaceIndices])
-nQuadIndices = np.array([len(x) for x in quadFaceIndices])
+# nTriIndices = np.array([len(x) for x in triFaceIndices])
+# nQuadIndices = np.array([len(x) for x in quadFaceIndices])
 
-directValence = nTriIndices + nQuadIndices
+# directValence = nTriIndices + nQuadIndices
 
-vertex = 0
+
+# vertex = 0
 # dVal = directValence[vertex]
-nAttFaces = directValence[vertex]
+# nAttFaces = directValence[vertex]
 
-if nAttFaces > 4:
-    for f in range(nAttFaces):
-        fIndex = vertexTable[vertex, f + 8]
-        if faceTable[fIndex, 1] == 3:
-            directNeighboursTemp = np.append(directNeighboursTemp, faceTable[fIndex, [2, 3, 4]])
-        elif faceTable[fIndex , 1] == 4:
-            pointPos = np.where(faceTable[fIndex, [2, 3, 4, 5]] == vertex)
-            pointPos = pointPos[0][0]
-            directNeighboursTemp = np.append(directNeighboursTemp, [faceTable[fIndex, ((pointPos - 1) % 4) + 2], faceTable[fIndex, ((pointPos + 1) % 4) + 2]])
-    # remove duplicate points ##
-    directNeighboursTemp = np.unique(directNeighboursTemp)
-    # remove P itself from list of neighbours
-    directNeighboursTemp = np.delete(directNeighboursTemp, np.where(directNeighboursTemp == vertex))
-
-    #set total valence for vertex
-    valence[vertex] = len(directNeighboursTemp)
-    # print(valence[vertex])
-    emptyEntries = nDirectNeighbours - len(directNeighboursTemp)
-    if emptyEntries > 0:
-        for i in range(emptyEntries):
-            directNeighboursTemp = np.append(directNeighboursTemp, -1)
-
-    # print(directNeighboursTemp)
-    directNeighbours[vertex, :] = directNeighboursTemp
-
-############ build neighbour data:########################
-
-#######################################
-
-# #determine valence of each vertex
-# valence = np.ndarray((nSurfacePoints, 1), dtype = object) # number of points to be used in evaluating derivatives
-# maxNeighbours = max(vertexTable[:, 7])
-# if maxNeighbours < 6:
-#     directNeighbours = np.ndarray((nSurfacePoints, 6), dtype = object) # entry is -1 if directNeighbours < 6
-#     nDirectNeighbours = 6
-# else:
-#     directNeighbours = np.ndarray((nSurfacePoints, maxNeighbours), dtype = object) # entry is -1 if directNeighbours < maxNeighbours
-#     nDirectNeighbours = maxNeighbours
-# diagonals = np.ndarray((nSurfacePoints, 8), dtype = object)
-# nDiagonals = -np.ones((nSurfacePoints, 1), dtype = int)
-# # print(nDiagonals)
-#
-#
-# ############################################################
-#
-# nAttFaces = vertexTable[vertex, 7]
-# # direct-valence = 5 or higher
 # if nAttFaces > 4:
 #     for f in range(nAttFaces):
 #         fIndex = vertexTable[vertex, f + 8]
@@ -117,6 +219,67 @@ if nAttFaces > 4:
 #
 #     # print(directNeighboursTemp)
 #     directNeighbours[vertex, :] = directNeighboursTemp
+
+############ build neighbour data:########################
+
+#######################################
+
+# #determine valence of each vertex
+# valence = np.ndarray((nSurfacePoints, 1), dtype = object) # number of points to be used in evaluating derivatives
+# maxNeighbours = max(vertexTable[:, 7])
+# if maxNeighbours < 6:
+#     directNeighbours = np.ndarray((nSurfacePoints, 6), dtype = object) # entry is -1 if directNeighbours < 6
+#     nDirectNeighbours = 6
+# else:
+#     directNeighbours = np.ndarray((nSurfacePoints, maxNeighbours), dtype = object) # entry is -1 if directNeighbours < maxNeighbours
+#     nDirectNeighbours = maxNeighbours
+# diagonals = np.ndarray((nSurfacePoints, 8), dtype = object)
+# nDiagonals = -np.ones((nSurfacePoints, 1), dtype = int)
+# # print(nDiagonals)
+#
+#
+# ############################################################
+#
+# nAttFaces = vertexTable[vertex, 7]
+# # direct-valence = 5 or higher
+# elif nAttFaces == 4:
+#     for f in range(nAttFaces):
+#         fIndex = vertexTable[vertex, f + 8]
+#         if faceTable[fIndex, 1] == 4:
+#             pointPos = np.where(faceTable[fIndex, [2, 3, 4, 5]] == vertex)
+#             pointPos = pointPos[0][0]
+#             directNeighboursTemp = np.append(directNeighboursTemp, [faceTable[fIndex, ((pointPos - 1) % 4) + 2], faceTable[fIndex, ((pointPos + 1) % 4) + 2]])
+#             diagonalsTemp = np.append(diagonalsTemp, faceTable[fIndex, ((pointPos + 2) % 4) + 2])
+#         elif faceTable[fIndex , 1] == 3:
+#             directNeighboursTemp = np.append(directNeighboursTemp, faceTable[fIndex, [2, 3, 4]])
+#             # get faces that share two vertices with faceTable[fIndex , 1]
+#             for i, diagCell in enumerate(faceTable[:, [2, 3, 4, 5]]):
+#                 if diagCell[3] == -1:
+#                     diagCell = np.delete(diagCell, 3)
+#                 mask = np.in1d(diagCell, faceTable[fIndex, [2, 3, 4, 5]]) # check if elements in arg1 are present in arg2, returns vector of length arg1
+#                 if np.sum(mask) == 2 and vertex not in diagCell:
+#                     diagonalsTemp = np.append(diagonalsTemp, diagCell)
+#     # remove duplicate points
+#     directNeighboursTemp = np.unique(directNeighboursTemp)
+#     # remove P itself from list of neighbours
+#     directNeighboursTemp = np.delete(directNeighboursTemp, np.where(directNeighboursTemp == vertex))
+#     # remove direct neighbours from list of diagonals
+#     diagonalsTemp = np.setdiff1d(diagonalsTemp, directNeighboursTemp)
+#
+#     #set total valence for vertex
+#     valence[vertex] = 4
+#     #set number of diagonals for vertex
+#     nDiagonals[vertex] = len(diagonalsTemp)
+#
+#     for i in range(4, nDirectNeighbours):
+#         directNeighboursTemp = np.append(directNeighboursTemp, -1)
+#
+#     if len(diagonalsTemp) < 8:
+#         for i in range(8 -len(diagonalsTemp)):
+#             diagonalsTemp = np.append(diagonalsTemp, -1)
+#
+#     directNeighbours[vertex, :] = directNeighboursTemp
+#     diagonals[vertex, :] = diagonalsTemp
 #
 # ##########################################################
 

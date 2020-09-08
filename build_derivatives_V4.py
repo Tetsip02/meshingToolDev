@@ -144,4 +144,6 @@ mesh_test1 = meshio.Mesh(points = points_it1, cells = voxels1)
 meshio.write("./output/layer1_it1Smoothing.vtk", mesh_test1, file_format="vtk", binary=False)
 # meshio.write("./output/layer1_noSmoothing.vtk", mesh_test0, file_format="vtk", binary=False)
 
-print(vertexTable[305:330, 7])
+print(vertexTable[0:10, :])
+print(directNeighbours[0:10, :])
+print(diagonals[0:10, :])
