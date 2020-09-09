@@ -144,6 +144,14 @@ mesh_test1 = meshio.Mesh(points = points_it1, cells = voxels1)
 meshio.write("./output/layer1_it1Smoothing.vtk", mesh_test1, file_format="vtk", binary=False)
 # meshio.write("./output/layer1_noSmoothing.vtk", mesh_test0, file_format="vtk", binary=False)
 
-print(vertexTable[0:10, :])
-print(directNeighbours[0:10, :])
-print(diagonals[0:10, :])
+# print(faceTable[0:5, :])
+# print(vertexTable[0:5, :])
+# print(directNeighbours[0:5, :])
+# print(diagonals[0:5, :])
+# for i in range(nSurfacePoints):
+#     if valence[i] > 5:
+#         print(vertexTable[i, :])
+print(valence[980])
+print(vertexTable[980, :])
+print(diagonals[980, :])
+print("715, 817, 979, 980, 993, 994, 995", level1[[715, 817, 979, 980, 993, 994, 995], :])

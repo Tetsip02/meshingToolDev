@@ -79,15 +79,15 @@ diagonalsQuad = []
 simpleDiagonals = []
 interDiagonals = []
 
-index = 6
+index = 1
 mask1 = np.isin(surface_triangles, index)
 # triFaceIndices.append(np.nonzero(mask1)[0])
 print(np.nonzero(mask1))
 mask2 = np.isin(surface_quads, index)
 # quadFaceIndices.append(np.nonzero(mask2)[0])
 print(np.nonzero(mask2))
-print(surface_triangles[2, :])
-print(surface_quads[[1, 4, 18], :])
+print(surface_triangles[[0, 6], :])
+print(surface_quads[[2, 22], :])
 directValence = len(np.nonzero(mask1)[0]) + len(np.nonzero(mask2)[0])
 print(directValence)
 
@@ -96,7 +96,29 @@ if directValence == 4:
     for faceIndex, pos in zip(np.nonzero(mask1)[0], np.nonzero(mask1)[1]):
         directNeighbours.extend(surface_triangles[faceIndex , :])
 
-    # find faces that share two nodes with attached triangles, if thats a triangle add to diagonals, if quad add mean of diagonals, skip for now
+    # find faces that share two nodes with attached triangles, if thats a triangle add to simpleDiagonals, if quad add both diagonals to interDiagonals
+    print("np.nonzero(mask1)[0]", np.nonzero(mask1)[0])
+    for triNeighbour in np.nonzero(mask1)[0]:
+        print("triNeighbour", triNeighbour)
+        x = surface_triangles[triNeighbour, :]
+        print(x)
+        for triFace in surface_triangles:
+            triDiaMask = np.isin(x, triFace)
+            if np.sum(triDiaMask) == 2 and index not in triFace:
+                triFaceReduced = [e for e in triFace if e not in x]
+                simpleDiagonals.append(triFaceReduced)
+        for quadFace in surface_quads:
+            quadDiaMask = np.isin(quadFace, x)
+            # print(quadFace)
+            # print(quadDiaMask)
+            if np.sum(quadDiaMask) == 2 and index not in quadFace:
+                print("quadFace", quadFace)
+                print("quadDiaMask", quadDiaMask)
+                quadFaceReduced = [e for e in quadFace if e not in x]
+                print("quadFaceReduced", quadFaceReduced)
+                interDiagonals.append(quadFaceReduced)
+                print("interDiagonals", interDiagonals)
+
 
     # seperate nodes of attached quad faces into direct neighbours and diagonals
     for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
@@ -106,6 +128,11 @@ if directValence == 4:
 
 print(directNeighbours)
 print(simpleDiagonals)
+print(interDiagonals)
+
+
+
+
 
     # for f in range(nAttFaces):
     #     fIndex = vertexTable[vertex, f + 8]
