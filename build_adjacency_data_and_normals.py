@@ -2,7 +2,8 @@ import meshio
 import numpy as np
 # import math
 from helpers import *
-import json
+# import json
+import pickle
 
 surface_triangles, surface_quads, surface_points = read_surface("./testGeometries/sphere.obj")
 # d1 = 0.1
@@ -24,21 +25,6 @@ nTriFaces = len(surface_triangles)
 nQuadFaces = len(surface_quads)
 nFaces = nTriFaces + nQuadFaces
 
-########################################################################
-
-# triFaceIndices = [] # [nPoints, number_of_attached_triangle_faces]
-# quadFaceIndices = [] # [nPoints, number_of_attached_quad_faces]
-# index = 0
-# mask1 = np.isin(surface_triangles, index)
-# triFaceIndices.append(np.nonzero(mask1)[0])
-# mask2 = np.isin(surface_quads, index)
-# quadFaceIndices.append(np.nonzero(mask2)[0])
-# print("triFaceIndices", triFaceIndices)
-# print("quadFaceIndices", quadFaceIndices)
-
-
-
-
 ######################################
 
 # build faceIndices for each point
@@ -59,125 +45,104 @@ for index in range(nPoints):
     indexValence = len(np.nonzero(mask1)[0]) + len(np.nonzero(mask2)[0])
     directValence.append(indexValence)
 
-    ##############
-    # print(triFaceIndices)
-    #############
 
     # # get relevant neighbour nodes used later for calculating derivatives
     # # initialize direct neighbours for point index
-    # indexNeighbours = []
-    # indexSimpleDiagonals = []
-    # indexInterDiagonals = []
-    #
-    # if indexValence > 4:
-    #     # add all points of attached triangles
-    #     for faceIndex in np.nonzero(mask1)[0]:
-    #         indexNeighbours.extend(surface_triangles[faceIndex , :])
-    #
-    #     # add all points except diagonal from attached quads
-    #     for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
-    #         face = surface_quads[faceIndex, :]
-    #         indexNeighbours.append(surface_quads[faceIndex, (pos - 1) % 4])
-    #         indexNeighbours.append(surface_quads[faceIndex, (pos + 1) % 4])
-    #
-    #     # remove duplicate points ##
-    #     indexNeighbours = list(set(indexNeighbours))
-    #     # remove point itself from list of neighbours
-    #     try:
-    #         indexNeighbours.remove(index)
-    #     except ValueError:
-    #         pass
-    #
-    # elif indexValence == 4:
-    #     # add all points of attached triangles
-    #     for faceIndex, pos in zip(np.nonzero(mask1)[0], np.nonzero(mask1)[1]):
-    #         indexNeighbours.extend(surface_triangles[faceIndex , :])
-    #
-    #     # find faces that share two nodes with attached triangles, if thats a triangle add to simpleDiagonals, if quad add both diagonals to interDiagonals
-    #     for triNeighbour in np.nonzero(mask1)[0]:
-    #         x = surface_triangles[triNeighbour, :]
-    #         for triFace in surface_triangles:
-    #             triDiaMask = np.isin(x, triFace)
-    #             if np.sum(triDiaMask) == 2 and index not in triFace:
-    #                 triFaceReduced = [e for e in triFace if e not in x]
-    #                 indexSimpleDiagonals.append(triFaceReduced)
-    #         for quadFace in surface_quads:
-    #             quadDiaMask = np.isin(quadFace, x)
-    #             if np.sum(quadDiaMask) == 2 and index not in quadFace:
-    #                 quadFaceReduced = [e for e in quadFace if e not in x]
-    #                 indexInterDiagonals.append(quadFaceReduced)
-    #
-    #     # seperate nodes of attached quad faces into direct neighbours and diagonals
-    #     for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
-    #         indexNeighbours.append(surface_quads[faceIndex, (pos - 1) % 4])
-    #         indexNeighbours.append(surface_quads[faceIndex, (pos + 1) % 4])
-    #         indexSimpleDiagonals.append(surface_quads[faceIndex, (pos + 2) % 4])
-    #
-    #     # remove duplicate points ##
-    #     indexNeighbours = list(set(indexNeighbours))
-    #     # remove point itself from list of neighbours
-    #     try:
-    #         indexNeighbours.remove(index)
-    #     except ValueError:
-    #         pass
-    #
-    # elif directValence == 3:
-    #     # add all points of attached triangles
-    #     for faceIndex, pos in zip(np.nonzero(mask1)[0], np.nonzero(mask1)[1]):
-    #         indexNeighbours.extend(surface_triangles[faceIndex , :])
-    #
-    #     # find faces that share two nodes with attached triangles, if thats a triangle add to directNeighbours, if quad add both diagonals to interDiagonals
-    #     for triNeighbour in np.nonzero(mask1)[0]:
-    #         x = surface_triangles[triNeighbour, :]
-    #         for triFace in surface_triangles:
-    #             triDiaMask = np.isin(x, triFace)
-    #             if np.sum(triDiaMask) == 2 and index not in triFace:
-    #                 triFaceReduced = [e for e in triFace if e not in x]
-    #                 indexNeighbours.append(triFaceReduced)
-    #         for quadFace in surface_quads:
-    #             quadDiaMask = np.isin(quadFace, x)
-    #             if np.sum(quadDiaMask) == 2 and index not in quadFace:
-    #                 quadFaceReduced = [e for e in quadFace if e not in x]
-    #                 indexInterDiagonals.append(quadFaceReduced)
-    #
-    #     # add all points of attached quad faces
-    #     for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
-    #         directNeighbours.extend(surface_quads[faceIndex , :])
-    #
-    #     # remove duplicate points ##
-    #     indexNeighbours = list(set(indexNeighbours))
-    #     # remove point itself from list of neighbours
-    #     try:
-    #         indexNeighbours.remove(index)
-    #     except ValueError:
-    #         pass
-    #
-    #
-    # directNeighbours.append(indexNeighbours)
-    # simpleDiagonals.append(indexSimpleDiagonals)
-    # interDiagonals.append(indexInterDiagonals)
+    indexNeighbours = []
+    indexSimpleDiagonals = []
+    indexInterDiagonals = []
+
+    if indexValence > 4:
+        # add all points of attached triangles
+        for faceIndex in np.nonzero(mask1)[0]:
+            indexNeighbours.extend(surface_triangles[faceIndex , :])
+
+        # add all points except diagonal from attached quads
+        for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
+            face = surface_quads[faceIndex, :]
+            indexNeighbours.append(surface_quads[faceIndex, (pos - 1) % 4])
+            indexNeighbours.append(surface_quads[faceIndex, (pos + 1) % 4])
+
+        # remove duplicate points ##
+        indexNeighbours = list(set(indexNeighbours))
+        # remove point itself from list of neighbours
+        try:
+            indexNeighbours.remove(index)
+        except ValueError:
+            pass
+
+    elif indexValence == 4:
+        # add all points of attached triangles
+        for faceIndex, pos in zip(np.nonzero(mask1)[0], np.nonzero(mask1)[1]):
+            indexNeighbours.extend(surface_triangles[faceIndex , :])
+
+        # find faces that share two nodes with attached triangles, if thats a triangle add to simpleDiagonals, if quad add both diagonals to interDiagonals
+        for triNeighbour in np.nonzero(mask1)[0]:
+            x = surface_triangles[triNeighbour, :]
+            for triFace in surface_triangles:
+                triDiaMask = np.isin(x, triFace)
+                if np.sum(triDiaMask) == 2 and index not in triFace:
+                    triFaceReduced = [e for e in triFace if e not in x]
+                    indexSimpleDiagonals.append(triFaceReduced)
+            for quadFace in surface_quads:
+                quadDiaMask = np.isin(quadFace, x)
+                if np.sum(quadDiaMask) == 2 and index not in quadFace:
+                    quadFaceReduced = [e for e in quadFace if e not in x]
+                    indexInterDiagonals.append(quadFaceReduced)
+
+        # seperate nodes of attached quad faces into direct neighbours and diagonals
+        for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
+            indexNeighbours.append(surface_quads[faceIndex, (pos - 1) % 4])
+            indexNeighbours.append(surface_quads[faceIndex, (pos + 1) % 4])
+            indexSimpleDiagonals.append(surface_quads[faceIndex, (pos + 2) % 4])
+
+        # remove duplicate points ##
+        indexNeighbours = list(set(indexNeighbours))
+        # remove point itself from list of neighbours
+        try:
+            indexNeighbours.remove(index)
+        except ValueError:
+            pass
+
+    elif directValence == 3:
+        # add all points of attached triangles
+        for faceIndex, pos in zip(np.nonzero(mask1)[0], np.nonzero(mask1)[1]):
+            indexNeighbours.extend(surface_triangles[faceIndex , :])
+
+        # find faces that share two nodes with attached triangles, if thats a triangle add to directNeighbours, if quad add both diagonals to interDiagonals
+        for triNeighbour in np.nonzero(mask1)[0]:
+            x = surface_triangles[triNeighbour, :]
+            for triFace in surface_triangles:
+                triDiaMask = np.isin(x, triFace)
+                if np.sum(triDiaMask) == 2 and index not in triFace:
+                    triFaceReduced = [e for e in triFace if e not in x]
+                    indexNeighbours.append(triFaceReduced)
+            for quadFace in surface_quads:
+                quadDiaMask = np.isin(quadFace, x)
+                if np.sum(quadDiaMask) == 2 and index not in quadFace:
+                    quadFaceReduced = [e for e in quadFace if e not in x]
+                    indexInterDiagonals.append(quadFaceReduced)
+
+        # add all points of attached quad faces
+        for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
+            directNeighbours.extend(surface_quads[faceIndex , :])
+
+        # remove duplicate points ##
+        indexNeighbours = list(set(indexNeighbours))
+        # remove point itself from list of neighbours
+        try:
+            indexNeighbours.remove(index)
+        except ValueError:
+            pass
 
 
-######################################################################################################
+    directNeighbours.append(indexNeighbours)
+    simpleDiagonals.append(indexSimpleDiagonals)
+    interDiagonals.append(indexInterDiagonals)
 
-# # build face normals
-# triNormal = []
-# quadNormal = []
-# for triFace in surface_triangles:
-#     coor = surface_points[triFace, :]
-#     triNormal.append(np.cross(coor[1] - coor[0], coor[2] - coor[0]))
-# for quadFace in surface_quads:
-#     coor = surface_points[quadFace, :]
-#     quadNormal.append(np.cross(coor[1] - coor[0], coor[2] - coor[0]))
 
-# build vertex normals
-# vertex = 0
-# for triNeighbour in triFaceIndices[vertex]:
-#     print(triNeighbour)
-#     print(triNormal[triNeighbour])
-# print(triNormal[0])
-# # print(triNormal[triFaceIndices[0]])
-# print(triFaceIndices[0])
+#####################################################################################################
+
 
 # build face normals
 triNormal = np.ndarray((nTriFaces, 3), dtype = object)
@@ -190,13 +155,41 @@ for i, quadFace in enumerate(surface_quads):
     quadNormal[i, :] = np.cross(coor[1] - coor[0], coor[2] - coor[0])
 
 # build vertex normals
-vertex = 0
 vertexNormal = np.zeros([nPoints, 3], dtype = object)
-print(vertexNormal[vertex])
-for triNeighbour in triFaceIndices[vertex]:
-    print(triNeighbour)
-    print(triNormal[triNeighbour])
-    vertexNormal[vertex] += triNormal[triNeighbour]
+for vertex, (triNeighbours, quadNeighbours) in enumerate(zip(triFaceIndices, quadFaceIndices)):
+    vertexNormal[vertex] += triNormal[triNeighbours].sum(axis = 0) + quadNormal[quadNeighbours].sum(axis = 0)
+# print(vertexNormal[0:20])
+
+# triFaceIndices = [] # [nPoints, number_of_attached_triangle_faces]
+# quadFaceIndices = [] # [nPoints, number_of_attached_quad_faces]
+# directValence = [] # [nPoints, 1]
+# directNeighbours = []
+# simpleDiagonals = []
+# interDiagonals = []
+with open("./dataOutput/V2_triFaceIndices.txt", "wb") as fp:   #Pickling
+    pickle.dump(triFaceIndices, fp)
+
+with open("./dataOutput/V2_quadFaceIndices.txt", "wb") as fp:   #Pickling
+    pickle.dump(quadFaceIndices, fp)
+
+with open("./dataOutput/V2_directValence.txt", "wb") as fp:   #Pickling
+    pickle.dump(directValence, fp)
+
+with open("./dataOutput/V2_directNeighbours.txt", "wb") as fp:   #Pickling
+    pickle.dump(directNeighbours, fp)
+
+with open("./dataOutput/V2_simpleDiagonals.txt", "wb") as fp:   #Pickling
+    pickle.dump(simpleDiagonals, fp)
+
+with open("./dataOutput/V2_interDiagonals.txt", "wb") as fp:   #Pickling
+    pickle.dump(interDiagonals, fp)
+
+# with open("test.txt", "rb") as fp:   # Unpickling
+#     b = pickle.load(fp)
+
+
+
+
 
 # print(directNeighbours)
 # print(simpleDiagonals)

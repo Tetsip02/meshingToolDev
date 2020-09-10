@@ -151,7 +151,7 @@ meshio.write("./output/layer1_it1Smoothing.vtk", mesh_test1, file_format="vtk", 
 # for i in range(nSurfacePoints):
 #     if valence[i] > 5:
 #         print(vertexTable[i, :])
-print(valence[980])
-print(vertexTable[980, :])
-print(diagonals[980, :])
-print("715, 817, 979, 980, 993, 994, 995", level1[[715, 817, 979, 980, 993, 994, 995], :])
+# print(valence[980])
+print(vertexTable[0, :])
+# print(diagonals[980, :])
+# print("715, 817, 979, 980, 993, 994, 995", level1[[715, 817, 979, 980, 993, 994, 995], :])
