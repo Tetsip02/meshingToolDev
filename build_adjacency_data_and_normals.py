@@ -83,7 +83,7 @@ for index in range(nPoints):
                 triDiaMask = np.isin(x, triFace)
                 if np.sum(triDiaMask) == 2 and index not in triFace:
                     triFaceReduced = [e for e in triFace if e not in x]
-                    indexSimpleDiagonals.append(triFaceReduced)
+                    indexSimpleDiagonals.append(triFaceReduced[0])
             for quadFace in surface_quads:
                 quadDiaMask = np.isin(quadFace, x)
                 if np.sum(quadDiaMask) == 2 and index not in quadFace:
@@ -104,7 +104,7 @@ for index in range(nPoints):
         except ValueError:
             pass
 
-    elif directValence == 3:
+    elif indexValence == 3:
         # add all points of attached triangles
         for faceIndex, pos in zip(np.nonzero(mask1)[0], np.nonzero(mask1)[1]):
             indexNeighbours.extend(surface_triangles[faceIndex , :])
@@ -125,7 +125,7 @@ for index in range(nPoints):
 
         # add all points of attached quad faces
         for faceIndex, pos in zip(np.nonzero(mask2)[0], np.nonzero(mask2)[1]):
-            directNeighbours.extend(surface_quads[faceIndex , :])
+            indexNeighbours.extend(surface_quads[faceIndex , :])
 
         # remove duplicate points ##
         indexNeighbours = list(set(indexNeighbours))

@@ -6,8 +6,8 @@ from sympy import * # symbols, Eq, solve, Matrix
 
 
 surface_triangles, surface_quads, surface_points = read_surface("./testGeometries/sphere.obj")
-d1 = 0.1
-d2 = 0.12
+d1 = 0.05
+d2 = 0.05
 level1, level2, level3 = build_ref_mesh_points(surface_points, surface_triangles, surface_quads, d1, d2, 1)
 nSurfacePoints = len(surface_points)
 level1_triangles = surface_triangles
@@ -128,10 +128,10 @@ level2_it1 = (c1[: , None] * r_xi_xi + c2[: , None] * r_eta_eta + c3[: , None] *
 points_it1 = np.concatenate((level1, level2_it1))
 points_it1 = points_it1.astype('float64')
 points_it0 = np.concatenate((level1, level2))
-print(points_it1.dtype)
-print(points_it0.dtype)
-print(points_it1[4870:4880, :])
-print(points_it0[4870:4880, :])
+# print(points_it1.dtype)
+# print(points_it0.dtype)
+# print(points_it1[4870:4880, :])
+# print(points_it0[4870:4880, :])
 
 
 voxels1 = [["wedge", np.concatenate((level1_triangles, level2_triangles),axis=1)], ["hexahedron", np.concatenate((level1_quads, level2_quads),axis=1)]]
@@ -152,6 +152,18 @@ meshio.write("./output/layer1_it1Smoothing.vtk", mesh_test1, file_format="vtk", 
 #     if valence[i] > 5:
 #         print(vertexTable[i, :])
 # print(valence[980])
-print(vertexTable[0, :])
+print(r_xi[0, :])
+print(r_eta[0, :])
+print(r_xi_xi[0, :])
+print(r_eta_eta[0, :])
+print(r_xi_eta[0, :])
+# vertex = 0
+# neighbourlist = directNeighbours[vertex, :]
+# neighbourCoor = np.ndarray((3, 5), dtype = object)
+# for m in range(M):
+#     neighbourCoor[: , m] = level2[neighbourlist[m], :]
+# print(neighbourCoor)
+# print(neighbourlist)
+# print(level2[1])
 # print(diagonals[980, :])
 # print("715, 817, 979, 980, 993, 994, 995", level1[[715, 817, 979, 980, 993, 994, 995], :])
