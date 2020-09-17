@@ -164,7 +164,7 @@ def get_tensors(xi, eta, xi_xi, eta_eta, xi_eta, zeta, zeta_zeta):
 
 d1 = 0.05
 d2 = 0.07
-n_it = 1
+n_it = 2
 level1_normals, level1_normals_norm = get_layer_normals(surface_points, surface_triangles, surface_quads, triFaceIndices, quadFaceIndices)
 level2 = surface_points + d1 * level1_normals_norm
 level2_normals, level2_normals_norm = get_layer_normals(level2, surface_triangles, surface_quads, triFaceIndices, quadFaceIndices)
@@ -182,6 +182,48 @@ V6_referenceMesh = meshio.Mesh(points = refMesh_points, cells = voxels1and2)
 meshio.write("./output/V6_referenceMesh.vtk", V6_referenceMesh, file_format="vtk", binary=False)
 # meshio.write("./output/ref_mesh_test2.msh", V5_mesh, file_format="gmsh22", binary=False)
 # v = 500
+
+##############################################
+
+# # control functions
+# # need to sort out zeta_zeta
+# xiCF, etaCF, xi_xiCF, eta_etaCF, xi_etaCF, zetaCF, zeta_zetaCF = get_derivatives(surface_points, level1_normals_norm, level2_normals_norm, d1, d2, directValence, directNeighbours, simpleDiagonals, interDiagonals)
+# # zetaCF = level1_normals
+# g_11CF, g_22CF, g_33CF, g_12CF, g_squareCF, c1CF, c2CF, c3CF, c4CF = get_tensors(xiCF, etaCF, xi_xiCF, eta_etaCF, xi_etaCF, zetaCF, zeta_zetaCF)
+# # g11_xi = 2 * xi_xiCF * xiCF
+# g11_xi = 2 * np.einsum('ij,ij->i', xi_xiCF, xiCF)
+# g22_xi = 2 * np.einsum('ij,ij->i', xi_etaCF, etaCF)
+# g11_eta = 2 * np.einsum('ij,ij->i', xi_etaCF, xiCF)
+# g12_eta = np.einsum('ij,ij->i', eta_etaCF, xiCF) + np.einsum('ij,ij->i', xi_etaCF, etaCF)
+# g22_eta = 2 * np.einsum('ij,ij->i', eta_etaCF, etaCF)
+# g12_xi = np.einsum('ij,ij->i', xi_xiCF, etaCF) + np.einsum('ij,ij->i', xi_etaCF, xiCF)
+#
+# # print(g11_xi.shape)
+# # print(xi_xiCF[0])
+# print("xi", xiCF[677])
+# print("eta", etaCF[677])
+# print("xi_xi", xi_xiCF[677])
+# print("eta_eta", eta_etaCF[677])
+# print("xi_eta", xi_etaCF[677])
+# print(surface_points[677])
+# print(interDiagonals[677])
+# # print(g11_xi[0])
+# RHSa = (g_12CF / g_22CF) * ((g11_eta / g_11CF) - (g12_eta / g_12CF)) - 0.5 * ((g11_xi / g_11CF) - (g22_xi / g_22CF))
+# RHSb = (g_12CF / g_11CF) * ((g22_xi / g_22CF) - (g12_xi / g_12CF)) - 0.5 * ((g22_eta / g_22CF) - (g11_eta / g_11CF))
+# phi = ((g_11CF * g_22CF) / (g_11CF * g_22CF - g_12CF ** 2)) * (RHSa - (g_12CF / g_22CF) * RHSb)
+# psi = ((g_11CF * g_22CF) / (g_11CF * g_22CF - g_12CF ** 2)) * (RHSb - (g_12CF / g_11CF) * RHSa)
+#
+# inf1 = math.inf
+# for i in range(nPoints):
+#     if np.abs(phi[i]) == inf1:
+#         phi[i] = 0
+#     if np.abs(psi[i]) == inf1:
+#         psi[i] = 0
+
+############################################
+
+
+
 for it in range(n_it):
     xi, eta, xi_xi, eta_eta, xi_eta, zeta, zeta_zeta = get_derivatives(level2, level1_normals_norm, level2_normals_norm, d1, d2, directValence, directNeighbours, simpleDiagonals, interDiagonals) #not sure if normalized or absolute normals work better
     # gDisp = np.array([[xi[v, 0], xi[v, 1], xi[v, 2]], [eta[v, 0], eta[v, 1], eta[v, 2]], [zeta[v, 0], zeta[v, 1], zeta[v, 2]]])
@@ -191,6 +233,7 @@ for it in range(n_it):
     # print(np.linalg.det(gDisp))
     g_11, g_22, g_33, g_12, g_square, c1, c2, c3, c4 = get_tensors(xi, eta, xi_xi, eta_eta, xi_eta, zeta, zeta_zeta)
     level2 = (c1[: , None] * xi_xi + c2[: , None] * eta_eta + c3[: , None] * xi_eta + c4[: , None] * zeta_zeta) / (2 * (c1[: , None] + c2[: , None]))
+    # level2 = (c1[: , None] * (xi_xi + phi[: , None] * xi) + c2[: , None] * (eta_eta + psi[: , None] * eta) + c3[: , None] * xi_eta + c4[: , None] * zeta_zeta) / (2 * (c1[: , None] + c2[: , None]))
     level2_normals, level2_normals_norm = get_layer_normals(level2, surface_triangles, surface_quads, triFaceIndices, quadFaceIndices)
     print("it", it)
     # print(xi.dtype)
@@ -216,35 +259,36 @@ meshio.write("./output/V6_surface.vtk", V6_surface, file_format="vtk", binary=Fa
 # meshio.write("./output/ref_mesh_test2.msh", V5_mesh, file_format="gmsh22", binary=False)
 
 #############################################################
-
-# control functions
-# need to sort out zeta_zeta
-xiCF, etaCF, xi_xiCF, eta_etaCF, xi_etaCF, zetaCF, zeta_zetaCF = get_derivatives(surface_points, level1_normals_norm, level2_normals_norm, d1, d2, directValence, directNeighbours, simpleDiagonals, interDiagonals)
-# zetaCF = level1_normals
-g_11CF, g_22CF, g_33CF, g_12CF, g_squareCF, c1CF, c2CF, c3CF, c4CF = get_tensors(xiCF, etaCF, xi_xiCF, eta_etaCF, xi_etaCF, zetaCF, zeta_zetaCF)
-# g11_xi = 2 * xi_xiCF * xiCF
-g11_xi = 2 * np.einsum('ij,ij->i', xi_xiCF, xiCF)
-g22_xi = 2 * np.einsum('ij,ij->i', xi_etaCF, etaCF)
-g11_eta = 2 * np.einsum('ij,ij->i', xi_etaCF, xiCF)
-g12_eta = np.einsum('ij,ij->i', eta_etaCF, xiCF) + np.einsum('ij,ij->i', xi_etaCF, etaCF)
-g22_eta = 2 * np.einsum('ij,ij->i', eta_etaCF, etaCF)
-g12_xi = np.einsum('ij,ij->i', xi_xiCF, etaCF) + np.einsum('ij,ij->i', xi_etaCF, xiCF)
-
-# print(g11_xi.shape)
-# print(xi_xiCF[0])
-# print(xiCF[0])
-# print(g11_xi[0])
-RHSa = (g_12CF / g_22CF) * ((g11_eta / g_11CF) - (g12_eta / g_12CF)) - 0.5 * ((g11_xi / g_11CF) - (g22_xi / g_22CF))
-RHSb = (g_12CF / g_11CF) * ((g22_xi / g_22CF) - (g12_xi / g_12CF)) - 0.5 * ((g22_eta / g_22CF) - (g11_eta / g_11CF))
-phi = ((g_11CF * g_22CF) / (g_11CF * g_22CF - g_12CF ** 2)) * (RHSa - (g_12CF / g_22CF) * RHSb)
-# RHSa = (g_12CF / g_22CF)
-# print(phi.shape)
-# print(g_12CF[0])
-# print(g_22CF[0])
-# print(g_11CF[1900:])
-# print(g_22CF[1900:])
-# print(npphi[500:1000])
-inf1 = math.inf
-for i, j in enumerate(phi):
-    if np.abs(j) == inf1:
-        print(i)
+#
+# # control functions
+# # need to sort out zeta_zeta
+# xiCF, etaCF, xi_xiCF, eta_etaCF, xi_etaCF, zetaCF, zeta_zetaCF = get_derivatives(surface_points, level1_normals_norm, level2_normals_norm, d1, d2, directValence, directNeighbours, simpleDiagonals, interDiagonals)
+# # zetaCF = level1_normals
+# g_11CF, g_22CF, g_33CF, g_12CF, g_squareCF, c1CF, c2CF, c3CF, c4CF = get_tensors(xiCF, etaCF, xi_xiCF, eta_etaCF, xi_etaCF, zetaCF, zeta_zetaCF)
+# # g11_xi = 2 * xi_xiCF * xiCF
+# g11_xi = 2 * np.einsum('ij,ij->i', xi_xiCF, xiCF)
+# g22_xi = 2 * np.einsum('ij,ij->i', xi_etaCF, etaCF)
+# g11_eta = 2 * np.einsum('ij,ij->i', xi_etaCF, xiCF)
+# g12_eta = np.einsum('ij,ij->i', eta_etaCF, xiCF) + np.einsum('ij,ij->i', xi_etaCF, etaCF)
+# g22_eta = 2 * np.einsum('ij,ij->i', eta_etaCF, etaCF)
+# g12_xi = np.einsum('ij,ij->i', xi_xiCF, etaCF) + np.einsum('ij,ij->i', xi_etaCF, xiCF)
+#
+# # print(g11_xi.shape)
+# # print(xi_xiCF[0])
+# # print(xiCF[0])
+# # print(g11_xi[0])
+# RHSa = (g_12CF / g_22CF) * ((g11_eta / g_11CF) - (g12_eta / g_12CF)) - 0.5 * ((g11_xi / g_11CF) - (g22_xi / g_22CF))
+# RHSb = (g_12CF / g_11CF) * ((g22_xi / g_22CF) - (g12_xi / g_12CF)) - 0.5 * ((g22_eta / g_22CF) - (g11_eta / g_11CF))
+# phi = ((g_11CF * g_22CF) / (g_11CF * g_22CF - g_12CF ** 2)) * (RHSa - (g_12CF / g_22CF) * RHSb)
+# psi = ((g_11CF * g_22CF) / (g_11CF * g_22CF - g_12CF ** 2)) * (RHSb - (g_12CF / g_11CF) * RHSa)
+# # RHSa = (g_12CF / g_22CF)
+# # print(phi.shape)
+# # print(g_12CF[0])
+# # print(g_22CF[0])
+# # print(g_11CF[1900:])
+# # print(g_22CF[1900:])
+# print(g_12CF[677])
+# inf1 = math.inf
+# for i, j in enumerate(phi):
+#     if np.abs(j) == inf1:
+#         print(i)
