@@ -22,6 +22,7 @@ triFaceIndices = [] # [nPoints, number_of_attached_triangle_faces]
 directValence = [] # [nPoints, 1]
 directNeighbours = []
 simpleDiagonals = []
+directNeighbours_sorted = []
 for index in range(nPoints):
     # get face indices for each point split into quad and tri lists
     mask1 = np.isin(surface_triangles, index)
@@ -101,6 +102,80 @@ for index in range(nPoints):
 
 #####################################################################################################
 
+# surface normals
+def get_layer_normals(points, triangles, tri_neighbours):
+    # build face normals
+    triNormal = np.ndarray((nTriFaces, 3), dtype = np.float64)
+    for i, triFace in enumerate(triangles):
+        coor = points[triFace, :]
+        triNormal[i, :] = np.cross(coor[1] - coor[0], coor[2] - coor[0])
+    # print(triNormal)
+    # print(triNormal.shape)
+    vertexNormal = np.zeros([points.shape[0], 3], dtype = np.float64)
+    for vertex, triNeighbours in enumerate(tri_neighbours):
+        vertexNormal[vertex] += triNormal[triNeighbours].sum(axis = 0)
+    # normalize
+    # print(vertexNormal)
+    # print("vnormal", vertexNormal.shape)
+    vertexNormal_norm = vertexNormal / np.linalg.norm(vertexNormal, axis = 1)[: , None]
+
+    return vertexNormal, vertexNormal_norm
+
+level1_normals, level1_normals_norm = get_layer_normals(surface_points, surface_triangles, triFaceIndices)
+
+##################################################################################################
+# order neighpoints in CW or CCW direction
+# print(directNeighbours[0])
+# print(simpleDiagonals)
+for i, neighInd in enumerate(directNeighbours):
+    neigh = surface_points[neighInd] # neighbour coordinates
+    centroid = surface_points[i] # vertex in question
+    plane = level1_normals_norm[i] #vertex normal
+    neigh_proj = neigh - np.dot(neigh - centroid, plane)[:, None] * plane # vertex neighbours projected onto plane
+    start = neigh_proj[0] # start ordering from neighbour with index 0
+    orient = np.cross(start, neigh_proj[1:])
+    orient = orient / np.linalg.norm(orient, axis = 1)[: , None]
+    # print("orient", orient)
+    orient = np.dot(orient, plane) # positive if point is in clockwise direction, negative if in CCW direction
+    orient /= np.abs(orient)
+
+    vector = neigh_proj - centroid
+    vector = vector / np.linalg.norm(vector, axis = 1)[: , None]
+
+    refvec = vector[0] # vector from which angles are measured
+
+    # angle = neigh_proj[1:] - centroid
+    # angle = angle / np.linalg.norm(angle, axis = 1)[: , None]
+    angle = np.dot(vector[1:], refvec)
+    angle = np.arccos(angle)
+
+    for i, orient in enumerate(orient):
+        if orient > 0:
+            angle[i] *= 180 / np.pi
+        elif orient < 0:
+            angle[i] = (2 * np.pi - angle[i]) * (180 / np.pi)
+    # print(angle)
+
+    key = np.argsort(angle)
+    key += 1
+    # print(key)
+    # print(neighInd)
+    # neighInd = np.array([3, 4, 135, 136, 280, 253])
+    neighInd = np.array(neighInd)
+    neighInd_sorted = neighInd.copy()
+    # print(neighInd.dtype)
+    # neighInd_sorted = np.array(neighInd)
+    # print(neighInd[[0, 1]])
+    neighInd_sorted[1:] = neighInd_sorted[key]
+    print(neighInd)
+    print(key)
+    print(neighInd_sorted)
+    directNeighbours_sorted.append(neighInd_sorted)
+    # print(neighInd_sorted)
+    # print(neighInd_sorted.shape)
+
+
+#####################################################################################################
 
 # build face normals
 # triNormal = np.ndarray((nTriFaces, 3), dtype = object)
@@ -139,6 +214,9 @@ with open("./dataOutput/Mesh_3_directNeighbours.txt", "wb") as fp:   #Pickling
 with open("./dataOutput/Mesh_3_simpleDiagonals.txt", "wb") as fp:   #Pickling
     pickle.dump(simpleDiagonals, fp)
 
+with open("./dataOutput/Mesh_3_directNeighbours_sorted.txt", "wb") as fp:   #Pickling
+    pickle.dump(directNeighbours_sorted, fp)
+
 # with open("./dataOutput/salomeCube_interDiagonals.txt", "wb") as fp:   #Pickling
 #     pickle.dump(interDiagonals, fp)
 
@@ -147,16 +225,16 @@ with open("./dataOutput/Mesh_3_simpleDiagonals.txt", "wb") as fp:   #Pickling
 # with open("test.txt", "rb") as fp:   # Unpickling
 #     b = pickle.load(fp)
 
-print(surface_points[5])
-print(directValence[5])
-print(directNeighbours[5])
-print(simpleDiagonals[5])
-print("3", surface_points[3])
-print("4", surface_points[4])
-print("135", surface_points[135])
-print("136", surface_points[136])
-print("280", surface_points[280])
-print("253", surface_points[253])
+# print(surface_points[5])
+# print(directValence[5])
+# print(directNeighbours[5])
+# print(simpleDiagonals[5])
+# print("3", surface_points[3])
+# print("4", surface_points[4])
+# print("135", surface_points[135])
+# print("136", surface_points[136])
+# print("280", surface_points[280])
+# print("253", surface_points[253])
 
 
 
