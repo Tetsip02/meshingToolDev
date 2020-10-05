@@ -1,0 +1,111 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1906                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    p
+    {
+        solver          GAMG;
+        smoother        GaussSeidel;
+        tolerance       1e-8;
+        relTol          0.01;
+        nPreSweeps      1;
+        nPostSweeps     3;
+	      nFinestSweeps   12;
+        cacheAgglomeration on;
+        agglomerator    faceAreaPair;
+        nCellsInCoarsestLevel 50;
+        mergeLevels     1;
+	      minIter		      1;
+        maxIter         100;
+    }
+
+    Phi
+    {
+        $p;
+    }
+
+    U
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        // solver              PBiCGStab;
+        // preconditioner      DILU;
+        tolerance       1e-9;
+        relTol          0.001; //0; //0.001;
+        nSweeps         3;
+    }
+
+    k
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        // solver              PBiCGStab;
+        // preconditioner      DILU;
+        tolerance       1e-9;
+        relTol          0.001;
+        nSweeps         3;
+        minIter         2;
+    }
+    omega
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        // solver              PBiCGStab;
+        // preconditioner      DILU;
+        tolerance       1e-10;
+        relTol          0.001;
+        nSweeps         3;
+        minIter         2;
+    }
+}
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 1;
+    consistent yes;
+    //pMin      pMin   [0 2 -2 0 0 0 0]    -250000;
+    //pMax      pMax   [0 2 -2 0 0 0 0]     4000;
+
+    // residualControl
+}
+
+potentialFlow
+{
+    nNonOrthogonalCorrectors 20;
+}
+
+relaxationFactors
+{
+    equations
+    {
+        U               0.6;
+        k               0.6;
+        omega           0.6;
+        T               0.6;
+    }
+    fields
+    {
+        p               0.9;
+    }
+}
+
+cache
+{
+    grad(U);
+}
+
+// ************************************************************************* //
