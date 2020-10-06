@@ -8,24 +8,24 @@ import math
 
 np.set_printoptions(precision=16)
 
-surface_triangles_ini, surface_quads_ini, surface_points = read_surface("./testGeometries/Mesh_3.stl")
+surface_triangles_ini, surface_quads_ini, surface_points = read_surface("./testGeometries/P023rotor0.stl")
 
 ##########################################################################################
 
-with open("./dataOutput/Mesh_3_triFaceIndices.txt", "rb") as fp:   # Unpickling
+with open("./dataOutput/P023rotor0_triFaceIndices.txt", "rb") as fp:   # Unpickling
     triFaceIndices = pickle.load(fp)
-with open("./dataOutput/Mesh_3_directValence.txt", "rb") as fp:   # Unpickling
+with open("./dataOutput/P023rotor0_directValence.txt", "rb") as fp:   # Unpickling
     directValence = pickle.load(fp)
-with open("./dataOutput/Mesh_3_directNeighbours.txt", "rb") as fp:   # Unpickling
+with open("./dataOutput/P023rotor0_directNeighbours.txt", "rb") as fp:   # Unpickling
     directNeighbours = pickle.load(fp)
-with open("./dataOutput/Mesh_3_neighbours_and_diagonals.txt", "rb") as fp:   # Unpickling
+with open("./dataOutput/P023rotor0_neighbours_and_diagonals.txt", "rb") as fp:   # Unpickling
     neighbours_and_diagonals = pickle.load(fp)
 
 ######################################################################
 
 #change orientation
 surface_triangles = surface_triangles_ini.copy()
-# surface_triangles[:,[1, 2]] = surface_triangles[:,[2, 1]]
+surface_triangles[:,[1, 2]] = surface_triangles[:,[2, 1]]
 surface_quads = surface_quads_ini.copy()
 
 ######################################
@@ -266,10 +266,10 @@ def get_tensors(xi, eta, xi_xi, eta_eta, xi_eta, zeta, zeta_zeta):
 
 ######################################################################
 # get smoothed mesh points
-nLayers = 10
-GR = 1.3
-firstLayerHeight = 0.01
-nSmoothingIt = 3
+nLayers = 50
+GR = 1.2
+firstLayerHeight = 0.000005
+nSmoothingIt = 1
 layerHeight = np.arange(nLayers + 1)
 layerHeight = firstLayerHeight * GR ** layerHeight
 level1 = surface_points.copy()
@@ -382,7 +382,7 @@ for layer in range(nLayers):
 
         # level2 = (c1[: , None] * xi_xi + c2[: , None] * eta_eta + c3[: , None] * xi_eta + c4[: , None] * zeta_zeta) / (2 * (c1[: , None] + c2[: , None]))
         # level2 = (c1[: , None] * (xi_xi + phi[: , None] * xi) + c2[: , None] * (eta_eta + psi[: , None] * eta) + c3[: , None] * xi_eta + c4[: , None] * (zeta_zeta + theta[: , None] * zeta)) / (2 * (c1[: , None] + c2[: , None]))
-        level2 = (c1[: , None] * ((1 + v_xi) * xi_xi + phi[: , None] * xi) + c2[: , None] * ((1 + v_eta) * eta_eta + psi[: , None] * eta) + c3[: , None] * xi_eta + c4[: , None] * (zeta_zeta + theta[: , None] * zeta)) / (2 * ((1 + v_xi) * c1[: , None] + (1 + v_eta) * c2[: , None]))
+        # level2 = (c1[: , None] * ((1 + v_xi) * xi_xi + phi[: , None] * xi) + c2[: , None] * ((1 + v_eta) * eta_eta + psi[: , None] * eta) + c3[: , None] * xi_eta + c4[: , None] * (zeta_zeta + theta[: , None] * zeta)) / (2 * ((1 + v_xi) * c1[: , None] + (1 + v_eta) * c2[: , None]))
         level2_normals, level2_normals_norm = get_layer_normals(level2, surface_triangles, triFaceIndices)
 
     # if layer == 0:
@@ -402,7 +402,8 @@ for layer in range(nLayers):
 # print(nMeshPoints)
 # points2 = np.reshape(points, (nMeshPoints, 3), order='C')
 mesh = meshio.Mesh(points = points, cells = voxels)
-meshio.write("./output/triSurface_completeMesh.vtk", mesh, file_format="vtk", binary=False)
+meshio.write("./output/P023rotor0_completeMesh.vtk", mesh, file_format="vtk", binary=False)
+meshio.write("./output/P023rotor0_completeMesh.msh", mesh, file_format="gmsh22", binary=False)
 # meshio.write("./output/ref_mesh_test2.msh", V5_mesh, file_format="gmsh22", binary=False)
 ###############################################################
 

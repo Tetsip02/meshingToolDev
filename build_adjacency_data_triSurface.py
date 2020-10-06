@@ -20,7 +20,7 @@ def get_layer_normals(points, triangles, tri_neighbours):
 
     return vertexNormal, vertexNormal_norm
 
-surface_triangles, surface_quads, surface_points = read_surface("./testGeometries/Mesh_3.stl")
+surface_triangles, surface_quads, surface_points = read_surface("./testGeometries/P023rotor0.stl")
 
 ######################################################################
 
@@ -230,16 +230,16 @@ for vertex, neighInd in enumerate(neighbours):
 #####################################################################
 # write data
 
-with open("./dataOutput/Mesh_3_triFaceIndices.txt", "wb") as fp:   #Pickling
+with open("./dataOutput/P023rotor0_triFaceIndices.txt", "wb") as fp:   #Pickling
     pickle.dump(triFaceIndices, fp)
 
-with open("./dataOutput/Mesh_3_directValence.txt", "wb") as fp:   #Pickling
+with open("./dataOutput/P023rotor0_directValence.txt", "wb") as fp:   #Pickling
     pickle.dump(valence, fp)
 
-with open("./dataOutput/Mesh_3_directNeighbours.txt", "wb") as fp:   #Pickling
+with open("./dataOutput/P023rotor0_directNeighbours.txt", "wb") as fp:   #Pickling
     pickle.dump(directNeighbours_sorted, fp)
 
-with open("./dataOutput/Mesh_3_neighbours_and_diagonals.txt", "wb") as fp:   #Pickling
+with open("./dataOutput/P023rotor0_neighbours_and_diagonals.txt", "wb") as fp:   #Pickling
     pickle.dump(neighbours_and_diagonals_sorted, fp)
 
 # with open("./dataOutput/V2_simpleDiagonals.txt", "wb") as fp:   #Pickling
