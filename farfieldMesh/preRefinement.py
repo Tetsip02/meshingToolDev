@@ -236,16 +236,28 @@ all_points = l0_points.copy()
 level0_mesh = z_hexas.copy()
 level = 1
 level1_mesh = []
-for targetCell in level0_targetCells:
+level1_targetPoints = [] # length = number of level1 cells, each entry contains list of target points in side each level1 cell
+level1_targetCells = [] # indices in level1_mesh of cells that need refining
+for i, targetCell in enumerate(level0_targetCells):
     # assemble refined cells
     new_level = np.diag(level0_mesh[targetCell])
     template = newLevelTemplate + all_points.shape[0] #- 19
     np.fill_diagonal(template, 0)
-    new_level += template
+    new_level += template # [8 x 8]
     level1_mesh.extend(new_level)
     # compute new points of children (19 new points per refinement)
     new_points = newPointsTemplate * 0.5 ** level * maxCellSize + all_points[level0_mesh[targetCell][0]]
     all_points = np.concatenate((all_points, new_points), axis = 0)
+    # compute targetCells and targetPoints among Level1 cells:
+    for j, child in enumerate(new_level):
+        tempList = []
+        for targetPoint in level0_targetPoints[targetCell]:
+            if hex_contains(all_points[child], faceCentroids[targetPoint]):
+                tempList.append(targetPoint)
+        level1_targetPoints.append(tempList)
+        if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
+            level1_targetCells.append((i * 8) + j)
+
 level1_mesh = np.array(level1_mesh)
 
 # ##############
@@ -260,7 +272,122 @@ refined_mesh = np.concatenate((level0_mesh_reduced, level1_mesh), axis = 0)
 all_voxels = [("hexahedron", refined_mesh)]
 level1_refinement = meshio.Mesh(points = all_points, cells = all_voxels)
 meshio.write("./level1_refinement.vtk", level1_refinement, file_format="vtk", binary=False)
-# meshio.write("./level2_refinement.msh", level2_refinement, file_format="gmsh22", binary=False)
+meshio.write("./level1_refinement.msh", level1_refinement, file_format="gmsh22", binary=False)
+
+level = 2
+level2_mesh = []
+level2_targetPoints = [] # length = number of level2 cells, each entry contains list of target points in side each level2 cell
+level2_targetCells = [] # indices in level2_mesh of cells that need refining
+for i, targetCell in enumerate(level1_targetCells):
+    # assemble refined cells
+    new_level = np.diag(level1_mesh[targetCell])
+    template = newLevelTemplate + all_points.shape[0] #- 19
+    np.fill_diagonal(template, 0)
+    new_level += template # [8 x 8]
+    level2_mesh.extend(new_level)
+    # compute new points of children (19 new points per refinement)
+    new_points = newPointsTemplate * 0.5 ** level * maxCellSize + all_points[level1_mesh[targetCell][0]]
+    all_points = np.concatenate((all_points, new_points), axis = 0)
+    # compute targetCells and targetPoints among Level1 cells:
+    for j, child in enumerate(new_level):
+        tempList = []
+        for targetPoint in level1_targetPoints[targetCell]:
+            if hex_contains(all_points[child], faceCentroids[targetPoint]):
+                tempList.append(targetPoint)
+        level2_targetPoints.append(tempList)
+        if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
+            level2_targetCells.append((i * 8) + j)
+level2_mesh = np.array(level2_mesh)
+
+#create refined mesh
+level1_mesh_reduced = np.delete(level1_mesh, level1_targetCells, axis=0)
+refined_mesh = np.concatenate((level0_mesh_reduced, level1_mesh_reduced, level2_mesh), axis = 0)
+all_voxels = [("hexahedron", refined_mesh)]
+level2_refinement = meshio.Mesh(points = all_points, cells = all_voxels)
+meshio.write("./level2_refinement.vtk", level2_refinement, file_format="vtk", binary=False)
+meshio.write("./level2_refinement.msh", level2_refinement, file_format="gmsh22", binary=False)
+
+level = 3
+level3_mesh = []
+level3_targetPoints = []
+level3_targetCells = []
+for i, targetCell in enumerate(level2_targetCells):
+    # assemble refined cells
+    new_level = np.diag(level2_mesh[targetCell])
+    template = newLevelTemplate + all_points.shape[0] #- 19
+    np.fill_diagonal(template, 0)
+    new_level += template # [8 x 8]
+    level3_mesh.extend(new_level)
+    # compute new points of children (19 new points per refinement)
+    new_points = newPointsTemplate * 0.5 ** level * maxCellSize + all_points[level2_mesh[targetCell][0]]
+    all_points = np.concatenate((all_points, new_points), axis = 0)
+    # compute targetCells and targetPoints among Level1 cells:
+    for j, child in enumerate(new_level):
+        tempList = []
+        for targetPoint in level2_targetPoints[targetCell]:
+            if hex_contains(all_points[child], faceCentroids[targetPoint]):
+                tempList.append(targetPoint)
+        level3_targetPoints.append(tempList)
+        if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
+            level3_targetCells.append((i * 8) + j)
+level3_mesh = np.array(level3_mesh)
+
+#create refined mesh
+level2_mesh_reduced = np.delete(level2_mesh, level2_targetCells, axis=0)
+refined_mesh = np.concatenate((level0_mesh_reduced, level1_mesh_reduced, level2_mesh_reduced, level3_mesh), axis = 0)
+all_voxels = [("hexahedron", refined_mesh)]
+level3_refinement = meshio.Mesh(points = all_points, cells = all_voxels)
+meshio.write("./level3_refinement.vtk", level3_refinement, file_format="vtk", binary=False)
+meshio.write("./level3_refinement.msh", level3_refinement, file_format="gmsh22", binary=False)
+
+level = 4
+level4_mesh = []
+level4_targetPoints = []
+level4_targetCells = []
+for i, targetCell in enumerate(level3_targetCells):
+    # assemble refined cells
+    new_level = np.diag(level3_mesh[targetCell])
+    template = newLevelTemplate + all_points.shape[0] #- 19
+    np.fill_diagonal(template, 0)
+    new_level += template # [8 x 8]
+    print(new_level)
+    level4_mesh.extend(new_level)
+    # compute new points of children (19 new points per refinement)
+    new_points = newPointsTemplate * 0.5 ** level * maxCellSize + all_points[level3_mesh[targetCell][0]]
+    all_points = np.concatenate((all_points, new_points), axis = 0)
+    # compute targetCells and targetPoints among Level4 cells:
+    for j, child in enumerate(new_level):
+        tempList = []
+        for targetPoint in level3_targetPoints[targetCell]:
+            if hex_contains(all_points[child], faceCentroids[targetPoint]):
+                tempList.append(targetPoint)
+        level4_targetPoints.append(tempList)
+        if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
+            level4_targetCells.append((i * 8) + j)
+level4_mesh = np.array(level4_mesh)
+
+##############
+temp_voxels = [("hexahedron", level4_mesh)]
+tempMesh = meshio.Mesh(points = all_points, cells = temp_voxels)
+meshio.write("./test.vtk", tempMesh, file_format="vtk", binary=False)
+##############
+
+#create refined mesh
+level3_mesh_reduced = np.delete(level3_mesh, level3_targetCells, axis=0)
+refined_mesh = np.concatenate((level0_mesh_reduced, level1_mesh_reduced, level2_mesh_reduced, level3_mesh_reduced, level4_mesh), axis = 0)
+all_voxels = [("hexahedron", refined_mesh)]
+level4_refinement = meshio.Mesh(points = all_points, cells = all_voxels)
+meshio.write("./level4_refinement.vtk", level4_refinement, file_format="vtk", binary=False)
+meshio.write("./level4_refinement.msh", level4_refinement, file_format="gmsh22", binary=False)
+
+
+
+
+
+
+# for level1_cell in level1_mesh:
+# print(len(level2_targetPoints))
+# print(level0_targetPoints)
 
 # level3_mesh = np.array(level3_mesh)
 # level3_voxels = [("hexahedron", level3_mesh)]
