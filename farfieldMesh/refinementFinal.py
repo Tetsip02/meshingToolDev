@@ -218,25 +218,24 @@ newLevelTemplate = np.array([[0, 0, 2, 1, 5, 6, 9, 8], [0, 0, 3, 2, 6, 7, 10, 9]
 
 
 level = 0
-# level0_targetPoints = []
-# level0_targetCells = []
-# # level0_targetPointsTemp = []
-# for i, leaf in enumerate(z_hexas):
-#     tempList = []
-#     for j, target in enumerate(faceCentroids):
-#         if hex_contains(l0_points[leaf], target):
-#             tempList.append(j)
-#     level0_targetPoints.append(tempList)
-#     if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
-#         level0_targetCells.append(i)
-# with open("./level0_targetPoints.txt", "wb") as fp:   #Pickling
-#     pickle.dump(level0_targetPoints, fp)
-# with open("./level0_targetCells.txt", "wb") as fp:   #Pickling
-#     pickle.dump(level0_targetCells, fp)
-with open("./level0_targetPoints.txt", "rb") as fp:   # Unpickling
-    level0_targetPoints = pickle.load(fp)
-with open("./level0_targetCells.txt", "rb") as fp:   # Unpickling
-    level0_targetCells = pickle.load(fp)
+level0_targetPoints = []
+level0_targetCells = []
+for i, leaf in enumerate(z_hexas):
+    tempList = []
+    for j, target in enumerate(faceCentroids):
+        if hex_contains(l0_points[leaf], target):
+            tempList.append(j)
+    level0_targetPoints.append(tempList)
+    if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
+        level0_targetCells.append(i)
+# # with open("./level0_targetPoints.txt", "wb") as fp:   #Pickling
+# #     pickle.dump(level0_targetPoints, fp)
+# # with open("./level0_targetCells.txt", "wb") as fp:   #Pickling
+# #     pickle.dump(level0_targetCells, fp)
+# with open("./level0_targetPoints.txt", "rb") as fp:   # Unpickling
+#     level0_targetPoints = pickle.load(fp)
+# with open("./level0_targetCells.txt", "rb") as fp:   # Unpickling
+#     level0_targetCells = pickle.load(fp)
 
 all_points = l0_points.copy()
 level0_mesh = z_hexas.copy()
@@ -315,53 +314,6 @@ level2_refinement = meshio.Mesh(points = all_points, cells = all_voxels)
 meshio.write("./level2_refinement.vtk", level2_refinement, file_format="vtk", binary=False)
 meshio.write("./level2_refinement.msh", level2_refinement, file_format="gmsh22", binary=False)
 
-# ##################################################################################
-# transLayers = 1
-# level2_midpoints = all_points[level2_mesh[:, 0]] + maxCellSize * 0.5 ** (level + 1)
-# rInf = transLayers * maxCellSize * 0.5 ** (level - 1)
-# ###################
-# # l0_leaf_targets = []
-# # for midpoint in level2_midpoints:
-# #     distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
-# #     mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
-# #     for i, leaf in enumerate(level0_mesh_reduced):
-# #         if np.any(np.in1d(leaf, mask)):
-# #             l0_leaf_targets.append(i)
-# # l0_leaf_targets = np.array(l0_leaf_targets)
-# # l0_leaf_targets = np.unique(l0_leaf_targets, axis = 0)
-# # with open("./l0_leaf_targets.txt", "wb") as fp:   #Pickling
-# #     pickle.dump(l0_leaf_targets, fp)
-# with open("./l0_leaf_targets.txt", "rb") as fp:   # Unpickling
-#     l0_leaf_targets = pickle.load(fp)
-# ########################################
-#
-# # refine trans targets
-# l1_trans_mesh = []
-# for i, trans_target in enumerate(l0_leaf_targets):
-#     # assemble refined cells
-#     new_level = np.diag(level0_mesh_reduced[trans_target])
-#     template = newLevelTemplate + all_points.shape[0]
-#     np.fill_diagonal(template, 0)
-#     new_level += template # [8 x 8]
-#     l1_trans_mesh.extend(new_level)
-#     # compute new points of children (19 new points per refinement)
-#     new_points = newPointsTemplate * 0.5 ** (level - 1) * maxCellSize + all_points[level0_mesh_reduced[trans_target][0]]
-#     all_points = np.concatenate((all_points, new_points), axis = 0)
-# l1_trans_mesh = np.array(l1_trans_mesh)
-#
-# trans_voxels2 = [("hexahedron", l1_trans_mesh)]
-# trans_targets2 = meshio.Mesh(points = all_points, cells = trans_voxels2)
-# meshio.write("./trans_targets2.vtk", trans_targets2, file_format="vtk", binary=False)
-#
-# #create refined mesh
-# level0_mesh_reduced2 = np.delete(level0_mesh_reduced, l0_leaf_targets, axis=0)
-# refined_mesh = np.concatenate((level0_mesh_reduced2, l1_trans_mesh, level1_mesh_reduced, level2_mesh), axis = 0)
-# all_voxels = [("hexahedron", refined_mesh)]
-# level2_refinement2 = meshio.Mesh(points = all_points, cells = all_voxels)
-# meshio.write("./level2_refinement_withTransition.vtk", level2_refinement2, file_format="vtk", binary=False)
-# meshio.write("./level2_refinement_withTransition.msh", level2_refinement2, file_format="gmsh22", binary=False)
-# ############################################################################################
-
 ###################################################
 
 level = 3
@@ -430,148 +382,7 @@ level4_refinement = meshio.Mesh(points = all_points, cells = all_voxels)
 meshio.write("./level4_refinement.vtk", level4_refinement, file_format="vtk", binary=False)
 meshio.write("./level4_refinement.msh", level4_refinement, file_format="gmsh22", binary=False)
 
-# ###########################################################################
-# # strategy:
-# # set currentLevel to 4
-# # compute level 4 midpoints
-# # set rInf to: transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
-# # cycle through level 2 cells and refine to level3 if one of its points is inside influence area
-# # set currentLevel to 3
-# # compute level 3 midpoints
-# # set rInf to: transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
-# # cycle through level 1 cells and refine to level2 if one of its points is inside influence area
-# # set currentLevel to 2
-# # compute level 2 midpoints
-# # set rInf to: transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
-# # cycle through level 0 cells and refine to level1 if one of its points is inside influence area
-#
-# transLayers = 1
-# currentLevel = 4
-# level4_midpoints = all_points[level4_mesh[:, 0]] + maxCellSize * 0.5 ** (currentLevel + 1)
-# rInf = transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
-# ############
-# # l2_trans_targets = []
-# # for midpoint in level4_midpoints:
-# #     distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
-# #     mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
-# #     for i, leaf in enumerate(level2_mesh_reduced):
-# #         if np.any(np.in1d(leaf, mask)):
-# #             l2_trans_targets.append(i)
-# # l2_trans_targets = np.array(l2_trans_targets)
-# # l2_trans_targets = np.unique(l2_trans_targets, axis = 0)
-# # with open("./l2_trans_targets.txt", "wb") as fp:   #Pickling
-# #     pickle.dump(l2_trans_targets, fp)
-# with open("./l2_trans_targets.txt", "rb") as fp:   # Unpickling
-#     l2_trans_targets = pickle.load(fp)
-# #############
-# # trans_voxels = [("hexahedron", level2_mesh_reduced[l2_trans_targets])]
-# # trans_targets = meshio.Mesh(points = all_points, cells = trans_voxels)
-# # meshio.write("./trans_targets.vtk", trans_targets, file_format="vtk", binary=False)
-# # refine trans targets
-# l2_trans_mesh = []
-# for trans_target in l2_trans_targets:
-#     # assemble refined cells
-#     new_level = np.diag(level2_mesh_reduced[trans_target])
-#     template = newLevelTemplate + all_points.shape[0]
-#     np.fill_diagonal(template, 0)
-#     new_level += template # [8 x 8]
-#     l2_trans_mesh.extend(new_level)
-#     # compute new points of children (19 new points per refinement)
-#     new_points = newPointsTemplate * 0.5 ** (currentLevel - 1) * maxCellSize + all_points[level2_mesh_reduced[trans_target][0]]
-#     all_points = np.concatenate((all_points, new_points), axis = 0)
-# l2_trans_mesh = np.array(l2_trans_mesh)
-# # trans_voxels2 = [("hexahedron", l2_trans_mesh)]
-# # trans_targets2 = meshio.Mesh(points = all_points, cells = trans_voxels2)
-# # meshio.write("./trans_targets2.vtk", trans_targets2, file_format="vtk", binary=False)
-#
-# currentLevel = 3
-# level3_midpoints = all_points[level3_mesh[:, 0]] + maxCellSize * 0.5 ** (currentLevel + 1)
-# rInf = transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
-# ############
-# # l1_trans_targets = []
-# # for midpoint in level3_midpoints:
-# #     distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
-# #     mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
-# #     for i, leaf in enumerate(level1_mesh_reduced):
-# #         if np.any(np.in1d(leaf, mask)):
-# #             l1_trans_targets.append(i)
-# # l1_trans_targets = np.array(l1_trans_targets)
-# # l1_trans_targets = np.unique(l1_trans_targets, axis = 0)
-# # with open("./l1_trans_targets.txt", "wb") as fp:   #Pickling
-# #     pickle.dump(l1_trans_targets, fp)
-# with open("./l1_trans_targets.txt", "rb") as fp:   # Unpickling
-#     l1_trans_targets = pickle.load(fp)
-# #############
-# # print(l1_trans_targets)
-# # trans_voxels = [("hexahedron", level1_mesh_reduced[l1_trans_targets])]
-# # trans_targets = meshio.Mesh(points = all_points, cells = trans_voxels)
-# # meshio.write("./trans_targets.vtk", trans_targets, file_format="vtk", binary=False)# refine trans targets
-# l1_trans_mesh = []
-# for trans_target in l1_trans_targets:
-#     # assemble refined cells
-#     new_level = np.diag(level1_mesh_reduced[trans_target])
-#     template = newLevelTemplate + all_points.shape[0]
-#     np.fill_diagonal(template, 0)
-#     new_level += template # [8 x 8]
-#     l1_trans_mesh.extend(new_level)
-#     # compute new points of children (19 new points per refinement)
-#     new_points = newPointsTemplate * 0.5 ** (currentLevel - 1) * maxCellSize + all_points[level1_mesh_reduced[trans_target][0]]
-#     all_points = np.concatenate((all_points, new_points), axis = 0)
-# l1_trans_mesh = np.array(l1_trans_mesh)
-# # trans_voxels2 = [("hexahedron", l1_trans_mesh)]
-# # trans_targets2 = meshio.Mesh(points = all_points, cells = trans_voxels2)
-# # meshio.write("./trans_targets2.vtk", trans_targets2, file_format="vtk", binary=False)
-#
-# currentLevel = 2
-# level2_midpoints = all_points[level2_mesh[:, 0]] + maxCellSize * 0.5 ** (currentLevel + 1)
-# rInf = transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
-# ############
-# # l0_trans_targets = []
-# # for midpoint in level2_midpoints:
-# #     distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
-# #     mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
-# #     for i, leaf in enumerate(level0_mesh_reduced):
-# #         if np.any(np.in1d(leaf, mask)):
-# #             l0_trans_targets.append(i)
-# # l0_trans_targets = np.array(l0_trans_targets)
-# # l0_trans_targets = np.unique(l0_trans_targets, axis = 0)
-# # with open("./l0_trans_targets.txt", "wb") as fp:   #Pickling
-# #     pickle.dump(l0_trans_targets, fp)
-# with open("./l0_trans_targets.txt", "rb") as fp:   # Unpickling
-#     l0_trans_targets = pickle.load(fp)
-# #############
-# # print(l0_trans_targets)
-# # trans_voxels = [("hexahedron", level0_mesh_reduced[l0_trans_targets])]
-# # trans_targets = meshio.Mesh(points = all_points, cells = trans_voxels)
-# # meshio.write("./trans_targets.vtk", trans_targets, file_format="vtk", binary=False)# refine trans targets
-# l0_trans_mesh = []
-# for trans_target in l0_trans_targets:
-#     # assemble refined cells
-#     new_level = np.diag(level0_mesh_reduced[trans_target])
-#     template = newLevelTemplate + all_points.shape[0]
-#     np.fill_diagonal(template, 0)
-#     new_level += template # [8 x 8]
-#     l0_trans_mesh.extend(new_level)
-#     # compute new points of children (19 new points per refinement)
-#     new_points = newPointsTemplate * 0.5 ** (currentLevel - 1) * maxCellSize + all_points[level0_mesh_reduced[trans_target][0]]
-#     all_points = np.concatenate((all_points, new_points), axis = 0)
-# l0_trans_mesh = np.array(l0_trans_mesh)
-# # trans_voxels2 = [("hexahedron", l0_trans_mesh)]
-# # trans_targets2 = meshio.Mesh(points = all_points, cells = trans_voxels2)
-# # meshio.write("./trans_targets2.vtk", trans_targets2, file_format="vtk", binary=False)
-#
-# ###################################################
-# #assemble final mesh
-# level0_mesh_reduced = np.delete(level0_mesh_reduced, l0_trans_targets, axis=0)
-# level1_mesh_reduced = np.delete(level1_mesh_reduced, l1_trans_targets, axis=0)
-# level2_mesh_reduced = np.delete(level2_mesh_reduced, l2_trans_targets, axis=0)
-# refined_mesh = np.concatenate((level0_mesh_reduced, l0_trans_mesh, level1_mesh_reduced, l1_trans_mesh, level2_mesh_reduced, l2_trans_mesh, level3_mesh_reduced, level4_mesh), axis = 0)
-# all_voxels = [("hexahedron", refined_mesh)]
-# trans_refinement = meshio.Mesh(points = all_points, cells = all_voxels)
-# meshio.write("./trans_refinement.vtk", trans_refinement, file_format="vtk", binary=False)
-# meshio.write("./trans_refinement.msh", trans_refinement, file_format="gmsh22", binary=False)
-# #################################################################################################
-
+#################################################################################
 # new strategy:
 # set currentLevel to 2
 # compute level 2 midpoints
@@ -588,24 +399,24 @@ meshio.write("./level4_refinement.msh", level4_refinement, file_format="gmsh22",
 # assembly:
 # level0_mesh_reduced - l0_trans_targets, l1_cells - l1_trans_targets, l2_cells - l2_trans_targets, level3_mesh_reduced, l2_trans_mesh, level4_mesh
 
-transLayers = 1
+transLayers = 2
 currentLevel = 2
 level2_midpoints = all_points[level2_mesh[:, 0]] + maxCellSize * 0.5 ** (currentLevel + 1)
 rInf = transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
 ############
-# l0_trans_targets = []
-# for midpoint in level2_midpoints:
-#     distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
-#     mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
-#     for i, leaf in enumerate(level0_mesh_reduced):
-#         if np.any(np.in1d(leaf, mask)):
-#             l0_trans_targets.append(i)
-# l0_trans_targets = np.array(l0_trans_targets)
-# l0_trans_targets = np.unique(l0_trans_targets, axis = 0)
+l0_trans_targets = []
+for midpoint in level2_midpoints:
+    distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
+    mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
+    for i, leaf in enumerate(level0_mesh_reduced):
+        if np.any(np.in1d(leaf, mask)):
+            l0_trans_targets.append(i)
+l0_trans_targets = np.array(l0_trans_targets)
+l0_trans_targets = np.unique(l0_trans_targets, axis = 0)
 # with open("./l0_trans_targets.txt", "wb") as fp:   #Pickling
 #     pickle.dump(l0_trans_targets, fp)
-with open("./l0_trans_targets.txt", "rb") as fp:   # Unpickling
-    l0_trans_targets = pickle.load(fp)
+# with open("./l0_trans_targets.txt", "rb") as fp:   # Unpickling
+#     l0_trans_targets = pickle.load(fp)
 #############
 # trans_voxels = [("hexahedron", level2_mesh_reduced[l2_trans_targets])]
 # trans_targets = meshio.Mesh(points = all_points, cells = trans_voxels)
@@ -632,19 +443,19 @@ level3_midpoints = all_points[level3_mesh[:, 0]] + maxCellSize * 0.5 ** (current
 rInf = transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
 ############
 l1_cells = np.concatenate((level1_mesh_reduced, l0_trans_mesh), axis = 0)
-# l1_trans_targets = []
-# for midpoint in level3_midpoints:
-#     distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
-#     mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
-#     for i, leaf in enumerate(l1_cells):
-#         if np.any(np.in1d(leaf, mask)):
-#             l1_trans_targets.append(i)
-# l1_trans_targets = np.array(l1_trans_targets)
-# l1_trans_targets = np.unique(l1_trans_targets, axis = 0)
+l1_trans_targets = []
+for midpoint in level3_midpoints:
+    distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
+    mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
+    for i, leaf in enumerate(l1_cells):
+        if np.any(np.in1d(leaf, mask)):
+            l1_trans_targets.append(i)
+l1_trans_targets = np.array(l1_trans_targets)
+l1_trans_targets = np.unique(l1_trans_targets, axis = 0)
 # with open("./l1_trans_targets.txt", "wb") as fp:   #Pickling
 #     pickle.dump(l1_trans_targets, fp)
-with open("./l1_trans_targets.txt", "rb") as fp:   # Unpickling
-    l1_trans_targets = pickle.load(fp)
+# with open("./l1_trans_targets.txt", "rb") as fp:   # Unpickling
+#     l1_trans_targets = pickle.load(fp)
 #############
 # trans_voxels = [("hexahedron", level2_mesh_reduced[l2_trans_targets])]
 # trans_targets = meshio.Mesh(points = all_points, cells = trans_voxels)
@@ -671,19 +482,19 @@ level4_midpoints = all_points[level4_mesh[:, 0]] + maxCellSize * 0.5 ** (current
 rInf = transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
 ############
 l2_cells = np.concatenate((level2_mesh_reduced, l1_trans_mesh), axis = 0)
-# l2_trans_targets = []
-# for midpoint in level4_midpoints:
-#     distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
-#     mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
-#     for i, leaf in enumerate(l2_cells):
-#         if np.any(np.in1d(leaf, mask)):
-#             l2_trans_targets.append(i)
-# l2_trans_targets = np.array(l2_trans_targets)
-# l2_trans_targets = np.unique(l2_trans_targets, axis = 0)
+l2_trans_targets = []
+for midpoint in level4_midpoints:
+    distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
+    mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
+    for i, leaf in enumerate(l2_cells):
+        if np.any(np.in1d(leaf, mask)):
+            l2_trans_targets.append(i)
+l2_trans_targets = np.array(l2_trans_targets)
+l2_trans_targets = np.unique(l2_trans_targets, axis = 0)
 # with open("./l2_trans_targets.txt", "wb") as fp:   #Pickling
 #     pickle.dump(l2_trans_targets, fp)
-with open("./l2_trans_targets.txt", "rb") as fp:   # Unpickling
-    l2_trans_targets = pickle.load(fp)
+# with open("./l2_trans_targets.txt", "rb") as fp:   # Unpickling
+#     l2_trans_targets = pickle.load(fp)
 #############
 # trans_voxels = [("hexahedron", level2_mesh_reduced[l2_trans_targets])]
 # trans_targets = meshio.Mesh(points = all_points, cells = trans_voxels)
@@ -715,3 +526,9 @@ trans_refinement = meshio.Mesh(points = all_points, cells = all_voxels)
 meshio.write("./trans_refinement2.vtk", trans_refinement, file_format="vtk", binary=False)
 meshio.write("./trans_refinement2.msh", trans_refinement, file_format="gmsh22", binary=False)
 # #################################################################################################
+with open("./refined_mesh.txt", "wb") as fp:   #Pickling
+    pickle.dump(refined_mesh, fp)
+with open("./all_points.txt", "wb") as fp:   #Pickling
+    pickle.dump(all_points, fp)
+# with open("./l1_trans_targets.txt", "rb") as fp:   # Unpickling
+#     l1_trans_targets = pickle.load(fp)

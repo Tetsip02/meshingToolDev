@@ -1,42 +1,280 @@
 # test ray tracing
 
 import numpy as np
-from shapely.geometry import Point, Polygon
-import pyny3d.geoms as pyny
+# from shapely.geometry import Point, Polygon
+# import pyny3d.geoms as pyny
 
-# # Create Point objects
-# p1 = Point(24.952242, 60.1696017, 0.5)
-# p2 = Point(24.976567, 60.1612500, 0.5)
-#
-# # Create a Polygon
-# # coords = [(24.950899, 60.169158), (24.953492, 60.169158), (24.953510, 60.170104), (24.950958, 60.169990)]
-# coords = np.array([(24.950899, 60.169158, 0), (24.953492, 60.169158, 0), (24.953510, 60.170104, 0), (24.950958, 60.169990, 0), (24.950899, 60.169158, 1), (24.953492, 60.169158, 1), (24.953510, 60.170104, 1), (24.950958, 60.169990, 1)])
-# poly = Polygon(coords)
-#
-# # Check if p1 is within the polygon using the within function
-# print(p1.within(poly))
-#
-# # Check if p2 is within the polygon
-# print(p2.within(poly))
-#
-# # Does polygon contain p1?
-# print(poly.contains(p1))
-#
-# # Does polygon contain p2?
-# print(poly.contains(p2))
+def triInBox(AABB, triangle):
+    h = np.abs((AABB[1, 0] - AABB[0, 0]) / 2)
+    c = AABB[0] + h
+    triangle -= c
+    # test 1, a00
+    p0 = triangle[0, 2] * triangle[1, 1] - triangle[0, 1] * triangle[1, 2]
+    p2 = triangle[2, 2] * (triangle[1, 1] - triangle[0, 1]) - triangle[2, 1] * (triangle[1, 2] - triangle[0, 2])
+    min_p = min(p0, p2)
+    max_p = max(p0, p2)
+    r = (np.abs(triangle[1, 2] - triangle[0, 2]) + np.abs(triangle[1, 1] - triangle[0, 1])) * h
+    if r < min_p or -r > max_p:
+        return 0; # False, no overlap
+    # test 2, a10
+    p0 = triangle[0, 0] * triangle[1, 2] - triangle[0, 2] * triangle[1, 0]
+    p2 = triangle[2, 0] * (triangle[1, 2] - triangle[0, 2]) - triangle[2, 2] * (triangle[1, 0] - triangle[0, 0])
+    min_p = min(p0, p2)
+    max_p = max(p0, p2)
+    r = (np.abs(triangle[1, 2] - triangle[0, 2]) + np.abs(triangle[1, 0] - triangle[0, 0])) * h
+    if r < min_p or -r > max_p:
+        return 0; # False, no overlap
+    # test 3, a20
+    p0 = triangle[0, 1] * triangle[1, 0] - triangle[0, 0] * triangle[1, 1]
+    p2 = triangle[2, 1] * (triangle[1, 0] - triangle[0, 0]) - triangle[2, 0] * (triangle[1, 1] - triangle[0, 1])
+    min_p = min(p0, p2)
+    max_p = max(p0, p2)
+    r = (np.abs(triangle[1, 1] - triangle[0, 1]) + np.abs(triangle[1, 0] - triangle[0, 0])) * h
+    if r < min_p or -r > max_p:
+        return 0; # False, no overlap
+    # test 4, a01
+    p0 = triangle[0, 2] * (triangle[2, 1] - triangle[1, 1]) - triangle[0, 1] * (triangle[2, 2] - triangle[1, 2])
+    p1 = triangle[1, 2] * triangle[2, 1] - triangle[1, 1] * triangle[2, 2]
+    min_p = min(p0, p1)
+    max_p = max(p0, p1)
+    r = (np.abs(triangle[2, 2] - triangle[1, 2]) + np.abs(triangle[2, 1] - triangle[1, 1])) * h
+    if r < min_p or -r > max_p:
+        return 0; # False, no overlap
+    # test 5, a11
+    p0 = triangle[0, 0] * (triangle[2, 2] - triangle[1, 2]) - triangle[0, 2] * (triangle[2, 0] - triangle[1, 0])
+    p1 = triangle[1, 0] * triangle[2, 2] - triangle[1, 2] * triangle[2, 0]
+    min_p = min(p0, p1)
+    max_p = max(p0, p1)
+    r = (np.abs(triangle[2, 2] - triangle[1, 2]) + np.abs(triangle[2, 0] - triangle[1, 0])) * h
+    if r < min_p or -r > max_p:
+        return 0; # False, no overlap
+    # test 6, a21
+    p0 = triangle[0, 1] * (triangle[2, 0] - triangle[1, 0]) - triangle[0, 0] * (triangle[2, 1] - triangle[1, 1])
+    p1 = triangle[1, 1] * triangle[2, 0] - triangle[1, 0] * triangle[2, 1]
+    min_p = min(p0, p1)
+    max_p = max(p0, p1)
+    r = (np.abs(triangle[2, 1] - triangle[1, 1]) + np.abs(triangle[2, 0] - triangle[1, 0])) * h
+    if r < min_p or -r > max_p:
+        return 0; # False, no overlap
+    # test 7, a02
+    p0 = triangle[0, 1] * triangle[2, 2] - triangle[0, 2] * triangle[2, 1]
+    p1 = triangle[1, 2] * (triangle[0, 1] - triangle[2, 1]) - triangle[1, 1] * (triangle[0, 2] - triangle[2, 2])
+    min_p = min(p0, p1)
+    max_p = max(p0, p1)
+    r = (np.abs(triangle[0, 2] - triangle[2, 2]) + np.abs(triangle[0, 1] - triangle[2, 1])) * h
+    if r < min_p or -r > max_p:
+        return 0; # False, no overlap
+    # test 8, a12
+    p0 = triangle[0, 2] * triangle[2, 0] - triangle[0, 0] * triangle[2, 2]
+    p1 = triangle[1, 0] * (triangle[0, 2] - triangle[2, 2]) - triangle[1, 2] * (triangle[0, 0] - triangle[2, 0])
+    min_p = min(p0, p1)
+    max_p = max(p0, p1)
+    r = (np.abs(triangle[0, 2] - triangle[2, 2]) + np.abs(triangle[0, 0] - triangle[2, 0])) * h
+    if r < min_p or -r > max_p:
+        return 0; # False, no overlap
+    # test 9, a22
+    p0 = triangle[0, 0] * triangle[2, 1] - triangle[0, 1] * triangle[2, 0]
+    p1 = triangle[1, 1] * (triangle[0, 0] - triangle[2, 0]) - triangle[1, 0] * (triangle[0, 1] - triangle[2, 1])
+    min_p = min(p0, p1)
+    max_p = max(p0, p1)
+    r = (np.abs(triangle[0, 1] - triangle[2, 1]) + np.abs(triangle[0, 0] - triangle[2, 0])) * h
+    if r < min_p or -r > max_p:
+        return 0; # False, no overlap
+    # test 10, x-plane
+    min_e = min(triangle[:, 0])
+    max_e = max(triangle[:, 0])
+    if h < min_e or -h > max_e:
+        return 0; # False, no overlap
+    # test 11, y-plane
+    min_e = min(triangle[:, 1])
+    max_e = max(triangle[:, 1])
+    if h < min_e or -h > max_e:
+        return 0; # False, no overlap
+    # test 12, z-plane
+    min_e = min(triangle[:, 2])
+    max_e = max(triangle[:, 2])
+    if h < min_e or -h > max_e:
+        return 0; # False, no overlap
+    # test 13, triangle normal
+    n = np.cross(triangle[1] - triangle[0], triangle[2] - triangle[0])
+    v = triangle[0]
+    min_v = -1 * v
+    max_v = min_v.copy()
+    for i, nor in enumerate(n):
+        if nor > 0:
+            min_v[i] -= h
+            max_v[i] += h
+        else:
+            min_v[i] += h
+            max_v[i] -= h
+    res = np.dot(n, min_v)
+    res2 = np.dot(n, max_v)
+    if res > 0:
+        return 0; # False, no overlap
+    elif res2 > 0:
+        # print("N:True, possibly overlap") # possibly overlap
+        pass
+    else:
+        return 0; # False, no overlap
+    return 1; # triangle intersects all 12 planes, and box intersects normal plane
 
-# poly1 = pyny.Polygon(np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]]))
-# poly2 = pyny.Polygon(np.array([[0, 0, 3], [0.5, 0, 3], [0.5, 0.5, 3], [0, 0.5, 3]]))
-# polyhedron = pyny.Polyhedron.by_two_polygons(poly1, poly2)
-# polyhedron.plot('b')
 
-plane1 = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]])
-point1 = np.array([20000000, 30000, 0.000000001])
+#######################################################
 
-planeN = np.cross(plane1[1] - plane1[0], plane1[2] - plane1[0])
+AABB = np.array([[1, 1, 1], [2, 1, 1], [2, 2, 1], [1, 2, 1], [1, 1, 2], [2, 1, 2], [2, 2, 2], [1, 2, 2]])
+triangle = np.array([[2.1, 2.1, 1], [3, 3, 1.2], [2.8, 2.9, 1.8]])
+# triangle = np.array([[1.9, 1.9, 1], [3, 3, 1.2], [2.8, 2.9, 1.8]])
 
-pointDash = np.dot(point1 - np.array([0, 0, 0]), planeN)
-# print(plane1[1])
-# print(plane1.shape)
-print(planeN)
-print(pointDash)
+t = triInBox(AABB, triangle)
+print(t)
+
+h = np.abs((AABB[1, 0] - AABB[0, 0]) / 2)
+c = AABB[0] + h
+triangle -= c
+
+# test 1, a00
+p0 = triangle[0, 2] * triangle[1, 1] - triangle[0, 1] * triangle[1, 2]
+p2 = triangle[2, 2] * (triangle[1, 1] - triangle[0, 1]) - triangle[2, 1] * (triangle[1, 2] - triangle[0, 2])
+min_p = min(p0, p2)
+max_p = max(p0, p2)
+r = (np.abs(triangle[1, 2] - triangle[0, 2]) + np.abs(triangle[1, 1] - triangle[0, 1])) * h
+if r < min_p or -r > max_p:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 2, a10
+p0 = triangle[0, 0] * triangle[1, 2] - triangle[0, 2] * triangle[1, 0]
+p2 = triangle[2, 0] * (triangle[1, 2] - triangle[0, 2]) - triangle[2, 2] * (triangle[1, 0] - triangle[0, 0])
+min_p = min(p0, p2)
+max_p = max(p0, p2)
+r = (np.abs(triangle[1, 2] - triangle[0, 2]) + np.abs(triangle[1, 0] - triangle[0, 0])) * h
+if r < min_p or -r > max_p:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 3, a20
+p0 = triangle[0, 1] * triangle[1, 0] - triangle[0, 0] * triangle[1, 1]
+p2 = triangle[2, 1] * (triangle[1, 0] - triangle[0, 0]) - triangle[2, 0] * (triangle[1, 1] - triangle[0, 1])
+min_p = min(p0, p2)
+max_p = max(p0, p2)
+r = (np.abs(triangle[1, 1] - triangle[0, 1]) + np.abs(triangle[1, 0] - triangle[0, 0])) * h
+if r < min_p or -r > max_p:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 4, a01
+p0 = triangle[0, 2] * (triangle[2, 1] - triangle[1, 1]) - triangle[0, 1] * (triangle[2, 2] - triangle[1, 2])
+p1 = triangle[1, 2] * triangle[2, 1] - triangle[1, 1] * triangle[2, 2]
+min_p = min(p0, p1)
+max_p = max(p0, p1)
+r = (np.abs(triangle[2, 2] - triangle[1, 2]) + np.abs(triangle[2, 1] - triangle[1, 1])) * h
+if r < min_p or -r > max_p:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 5, a11
+p0 = triangle[0, 0] * (triangle[2, 2] - triangle[1, 2]) - triangle[0, 2] * (triangle[2, 0] - triangle[1, 0])
+p1 = triangle[1, 0] * triangle[2, 2] - triangle[1, 2] * triangle[2, 0]
+min_p = min(p0, p1)
+max_p = max(p0, p1)
+r = (np.abs(triangle[2, 2] - triangle[1, 2]) + np.abs(triangle[2, 0] - triangle[1, 0])) * h
+if r < min_p or -r > max_p:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 6, a21
+p0 = triangle[0, 1] * (triangle[2, 0] - triangle[1, 0]) - triangle[0, 0] * (triangle[2, 1] - triangle[1, 1])
+p1 = triangle[1, 1] * triangle[2, 0] - triangle[1, 0] * triangle[2, 1]
+min_p = min(p0, p1)
+max_p = max(p0, p1)
+r = (np.abs(triangle[2, 1] - triangle[1, 1]) + np.abs(triangle[2, 0] - triangle[1, 0])) * h
+if r < min_p or -r > max_p:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 7, a02
+p0 = triangle[0, 1] * triangle[2, 2] - triangle[0, 2] * triangle[2, 1]
+p1 = triangle[1, 2] * (triangle[0, 1] - triangle[2, 1]) - triangle[1, 1] * (triangle[0, 2] - triangle[2, 2])
+min_p = min(p0, p1)
+max_p = max(p0, p1)
+r = (np.abs(triangle[0, 2] - triangle[2, 2]) + np.abs(triangle[0, 1] - triangle[2, 1])) * h
+if r < min_p or -r > max_p:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 8, a12
+p0 = triangle[0, 2] * triangle[2, 0] - triangle[0, 0] * triangle[2, 2]
+p1 = triangle[1, 0] * (triangle[0, 2] - triangle[2, 2]) - triangle[1, 2] * (triangle[0, 0] - triangle[2, 0])
+min_p = min(p0, p1)
+max_p = max(p0, p1)
+r = (np.abs(triangle[0, 2] - triangle[2, 2]) + np.abs(triangle[0, 0] - triangle[2, 0])) * h
+if r < min_p or -r > max_p:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 9, a22
+p0 = triangle[0, 0] * triangle[2, 1] - triangle[0, 1] * triangle[2, 0]
+p1 = triangle[1, 1] * (triangle[0, 0] - triangle[2, 0]) - triangle[1, 0] * (triangle[0, 1] - triangle[2, 1])
+min_p = min(p0, p1)
+max_p = max(p0, p1)
+r = (np.abs(triangle[0, 1] - triangle[2, 1]) + np.abs(triangle[0, 0] - triangle[2, 0])) * h
+if r < min_p or -r > max_p:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 10, x-plane
+min_e = min(triangle[:, 0])
+max_e = max(triangle[:, 0])
+if h < min_e or -h > max_e:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 11, y-plane
+min_e = min(triangle[:, 1])
+max_e = max(triangle[:, 1])
+if h < min_e or -h > max_e:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 12, z-plane
+min_e = min(triangle[:, 2])
+max_e = max(triangle[:, 2])
+if h < min_e or -h > max_e:
+    print("False, no overlap") # no overlap
+else:
+    print("True, possibly overlap") # possibly overlap
+
+# test 13, triangle normal
+n = np.cross(triangle[1] - triangle[0], triangle[2] - triangle[0])
+v = triangle[0]
+min_v = -1 * v
+max_v = min_v.copy()
+for i, nor in enumerate(n):
+    if nor > 0:
+        min_v[i] -= h
+        max_v[i] += h
+    else:
+        min_v[i] += h
+        max_v[i] -= h
+res = np.dot(n, min_v)
+res2 = np.dot(n, max_v)
+if res > 0:
+    print("N:False, no overlap") # no overlap
+elif res2 > 0:
+    print("N:True, possibly overlap") # possibly overlap
+else:
+    print("N:False, no overlap") # no overlap
+
+# def triBox(AABB, triangle):
+#     h = AABB[]
