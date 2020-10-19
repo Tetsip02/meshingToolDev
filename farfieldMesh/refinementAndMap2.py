@@ -1,8 +1,5 @@
 import meshio
 import numpy as np
-# from shapely.geometry import Point, Polygon
-# from vtk.util import numpy_support
-# from pyevtk.hl import gridToVTK
 # import pickle
 # from helpers import *
 # from helpers import centroid, read_surface, get_face_normals, area, hex_contains, root_neighbour, bounding_box, triInBox
@@ -278,56 +275,121 @@ def triInBox(AABB, triangle):
 
 ####################################################
 
-surface_triangles, surface_quads, surface_points = read_surface("./sphere.obj")
+surface_triangles_ini, surface_quads_ini, surface_points = read_surface("./sphere.obj")
+
+######################################################################
+
+#change orientation
+surface_triangles = surface_triangles_ini.copy()
+surface_quads = surface_quads_ini.copy()
+reverseOrientation = 1
+if reverseOrientation == 1:
+    surface_triangles[:,[1, 2]] = surface_triangles[:,[2, 1]]
+    surface_quads[:,[1, 3]] = surface_quads[:,[3, 1]]
+
+######################################
 
 nPoints = len(surface_points)
 nTriFaces = len(surface_triangles)
 nQuadFaces = len(surface_quads)
 nFaces = nTriFaces + nQuadFaces
-# NumPy_data_shape = NumPy_data.shape
-# VTK_data = numpy_support.numpy_to_vtk(num_array=surface_points, deep=True, array_type=vtk.VTK_FLOAT)
-# VTK_data = numpy_support.numpy_to_vtk(num_array=surface_points, deep=True)
 
 # get list of face normals
 triangleNormals, quadNormals = get_face_normals(surface_points, surface_triangles, surface_quads)
 
+# build neighbour faces for each point on surface mesh
+triFaceIndices = [] # [nPoints, number_of_attached_triangle_faces]
+quadFaceIndices = [] # [nPoints, number_of_attached_quad_faces]
+directValence = [] # [nPoints, 1]
+for index in range(nPoints):
+    # get face indices for each point split into quad and tri lists
+    mask1 = np.isin(surface_triangles, index)
+    triFaceIndices.append(np.nonzero(mask1)[0].tolist())
+    # triFaceIndices.extend(np.nonzero(mask1)[0])
+    mask2 = np.isin(surface_quads, index)
+    quadFaceIndices.append(np.nonzero(mask2)[0].tolist())
+    # quadFaceIndices.extend(np.nonzero(mask2)[0])
+
+    # get total number of attached faces for each point = direct valence
+    indexValence = len(np.nonzero(mask1)[0]) + len(np.nonzero(mask2)[0])
+    directValence.append(indexValence)
+
 # get list of face centroids
-faceCentroids = []
-faceArea = []
-sizeField = []
-targetLevel = []
+# faceCentroids = []
+# faceArea = []
+# sizeField = []
+# triangleSizeField = [] #new
+# quadSizeField = [] #new
+triangleFaceArea = [] #new
+quadFaceArea = [] #new
+# targetLevel = []
+triangleTargetLevel = [] #new
+quadTargetLevel = [] #new
 triSizeFieldFactor = 2 * 3 ** -0.25
 maxCellSize = 1.2
 maxLevel = 10
 transLayers = 2
 
 for i, face in enumerate(surface_triangles):
-    faceCentroids.append(centroid(surface_points[face]))
+    # faceCentroids.append(centroid(surface_points[face]))
     triArea = area(surface_points[face], triangleNormals[i])
-    faceArea.append(triArea)
+    # faceArea.append(triArea)
+    triangleFaceArea.append(triArea) #new
     edgeSize = triSizeFieldFactor * (triArea ** 0.5)
-    sizeField.append(edgeSize)
+    # sizeField.append(edgeSize)
+    # triangleSizeField.append(edgeSize) #new
     r = np.log2(maxCellSize/edgeSize)
-    if np.abs(2 ** np.int(r) - maxCellSize) < np.abs(2 ** (np.int(r) + 1) - maxCellSize):
-        targetLevel.append(np.int(r))
-    else:
-        targetLevel.append(np.int(r) + 1)
+    triangleTargetLevel.append(r) #new
+    # if np.abs(2 ** np.int(r) - maxCellSize) < np.abs(2 ** (np.int(r) + 1) - maxCellSize):
+    #     targetLevel.append(np.int(r))
+    #     # triangleTargetLevel.append(np.int(r)) #new
+    # else:
+    #     targetLevel.append(np.int(r) + 1)
+    #     # triangleTargetLevel.append(np.int(r) + 1) #new
 for i, face in enumerate(surface_quads):
-    faceCentroids.append(centroid(surface_points[face]))
+    # faceCentroids.append(centroid(surface_points[face]))
     quadArea = area(surface_points[face], quadNormals[i])
-    faceArea.append(quadArea)
+    # faceArea.append(quadArea)
+    quadFaceArea.append(quadArea) #new
     edgeSize = quadArea ** 0.5
-    sizeField.append(edgeSize)
+    # sizeField.append(edgeSize)
+    # quadSizeField.append(edgeSize) #new
     r = np.log2(maxCellSize/edgeSize)
-    if np.abs(2 ** np.int(r) - maxCellSize) < np.abs(2 ** (np.int(r) + 1) - maxCellSize):
-        targetLevel.append(np.int(r))
-    else:
-        targetLevel.append(np.int(r) + 1)
+    quadTargetLevel.append(r) #new
+    # if np.abs(2 ** np.int(r) - maxCellSize) < np.abs(2 ** (np.int(r) + 1) - maxCellSize):
+    #     targetLevel.append(np.int(r))
+    #     # quadTargetLevel.append(np.int(r)) #new
+    # else:
+    #     targetLevel.append(np.int(r) + 1)
+    #     # quadTargetLevel.append(np.int(r) + 1) #new
 
-faceCentroids = np.array(faceCentroids)
-faceArea = np.array(faceArea)
-sizeField = np.array(sizeField)
-targetLevel = np.array(targetLevel)
+# faceCentroids = np.array(faceCentroids)
+# faceArea = np.array(faceArea)
+# sizeField = np.array(sizeField)
+# targetLevel = np.array(targetLevel)
+# triangleSizeField = np.array(triangleSizeField) #new
+# quadSizeField = np.array(quadSizeField) #new
+triangleFaceArea = np.array(triangleFaceArea) #new
+quadFaceArea = np.array(quadFaceArea) #new
+triangleTargetLevel = np.array(triangleTargetLevel) #new
+quadTargetLevel = np.array(quadTargetLevel) #new
+
+# compute target level / size field of each surface point, weighted average of neighbour faces
+pointTargetLevel = []
+for index in range(nPoints):
+    neigh_targetLevels = np.concatenate((triangleTargetLevel[triFaceIndices[index]], quadTargetLevel[quadFaceIndices[index]]), axis = 0)
+    neigh_weights = np.concatenate((triangleFaceArea[triFaceIndices[index]], quadFaceArea[quadFaceIndices[index]]), axis = 0)
+    avg_target = np.average(neigh_targetLevels, weights = neigh_weights)
+
+    if np.abs(2 ** np.int(avg_target) - maxCellSize) < np.abs(2 ** (np.int(avg_target) + 1) - maxCellSize):
+        pointTargetLevel.append(np.int(avg_target))
+    else:
+        pointTargetLevel.append(np.int(avg_target) + 1)
+
+pointTargetLevel = np.array(pointTargetLevel)
+maxLevel = min(np.max(pointTargetLevel), maxLevel)
+if maxLevel == 0:
+    print("nothing to refine")
 
 # set up base mesh
 bBox_origin = np.array([0.0, 0.0, 0.0])
@@ -406,8 +468,245 @@ FS = np.array(FS)
 BS = FS + (nDivisions[0] * (nDivisions[1] - 1))
 
 # print(FS)
-x = root_neighbour(820, "F")
-print(x)
+# x = root_neighbour(820, "F")
+
+############################################################
+# variables at this point
+# rootIndex [n_l0_cells, 1] = [0, 1, 2, ..., n_l0_cells - 1]
+# pointTargetLevel [number of surface_points, 1]
+#################################################
+
+def all_root_neighbours(target_root):
+    # target_root: index of root voxel
+    neighbours = []
+    if target_root not in TS:
+        neighbours.append(target_root + nDivisions[0] * nDivisions[1]) # upper neighbour
+    if target_root not in BS:
+        neighbours.append(target_root + nDivisions[0]) # back neighbour
+    if target_root not in RS:
+        neighbours.append(target_root + 1) # right neighbour
+    if target_root not in DS:
+        neighbours.append(target_root - nDivisions[0] * nDivisions[1]) # down neighbour
+    if target_root not in FS:
+        neighbours.append(target_root - nDivisions[0]) # front neighbour
+    if target_root not in LS:
+        neighbours.append(target_root - 1) # left neighbour
+    return neighbours
+
+# level 0 refinement
+# create mask of surface points whose level is above 0
+# select random point from mask
+# locate start cell (cell whose midpoint is closest to seleceted surface point)
+# add start cell to list of target cells
+# remove start cell from list of non targets
+# compute influence radius
+# locate neighbours of start cell
+# for each neighbour
+#   get midpoint of neighbour
+#   locate surface point (from list of mask) closest to midpoint of neighbour
+#   inflate neighbour by influence radius
+#   if inflated neighbour contains the surface point
+#       add neighbour to list of target cells
+#       remove neighbour from list of non targets
+# for each neighbour that was selceted as a target
+#   compute their own neighbours
+#   add new neighbours to list of new neighbours if new neighbour is not start cell or inside list of old neighbours
+# compute new targets, add new list of neighbours to old one, and repeat
+# stop condition: list of new neighbours is empty
+
+level = 0
+rInf = transLayers * maxCellSize * 0.5 ** level
+all_points = l0_points.copy()
+level0_mesh = z_hexas.copy()
+
+level0_targets = [] # refinement targets
+level0_non_targets = rootIndex.copy() # list of cells to be left alone
+level0_checked = [] # level 0 cells which have already been tested whether they need refinement
+
+surface_0_plus_mask = np.array(np.where(pointTargetLevel > 0)).ravel() # surface point indices whose target level is above zero
+
+level0_midpoints = all_points[level0_mesh[:, 0]] + maxCellSize * 0.5 # coordinates of level0 midpoints
+distToMidpoint = np.sum((surface_points[surface_0_plus_mask[0]] - level0_midpoints) ** 2, axis = 1) ** 0.5 # list of distances between level0_midpoints and random point on surface whose target level is above 0
+start_cell = np.argmin(distToMidpoint) # index of cell closest to selceted point on surface
+
+level0_targets.append(start_cell) # add start_cell to list of targets
+level0_non_targets = np.delete(level0_non_targets, start_cell)
+
+level0_checked.append(start_cell) # add targets to list of cells that needn't be checked again
+
+root_neighbours = all_root_neighbours(start_cell) # neighbours (in ortho-directions) of start_cell
+
+# for cellIndex in root_neighbours:
+#     midpoint = level0_midpoints[cellIndex] # midpoint of neighbour
+#     distToMidpoint = np.sum((surface_points[surface_0_plus_mask] - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points whose level is above 0
+#     test_surface_point = surface_points[surface_0_plus_mask[np.argmin(distToMidpoint)]] # coordinates of surface point closest to midpoint
+#     hex = rInf * all_points[level0_mesh[cellIndex]] # coordinates of inflated neighbour
+#     if hex_contains(hex, test_surface_point): # condition for whether neighbour needs to be refined
+#         level0_targets.append(cellIndex) # if condition is met, add neighbour to list of refinement targets
+#         level0_non_targets = np.delete(level0_non_targets, cellIndex) # if condition is met, remove neighbour from list of non-targets
+# print(level0_targets)
+
+tempTargets = []
+for cellIndex in root_neighbours:
+    midpoint = level0_midpoints[cellIndex] # midpoint of neighbour
+    distToMidpoint = np.sum((surface_points[surface_0_plus_mask] - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points whose level is above 0
+    test_surface_point = surface_points[surface_0_plus_mask[np.argmin(distToMidpoint)]] # coordinates of surface point closest to midpoint
+    hex = rInf * all_points[level0_mesh[cellIndex]] # coordinates of inflated neighbour
+    if hex_contains(hex, test_surface_point): # condition for whether neighbour needs to be refined
+        tempTargets.append(cellIndex)
+print(tempTargets)
+if len(tempTargets) == 0:
+    print("nothing else to refine")
+else:
+    level0_targets.extend(tempTargets)
+print(level0_targets)
+
+level0_checked.extend(root_neighbours) # # add target neighbours to list of cells that needn't be checked again
+print("checked", level0_checked)
+
+# go through each neighbour that was selected and compute their neighbours
+root_neighbours = []
+for cellIndex in tempTargets:
+    root_neighbours.extend(all_root_neighbours(cellIndex))
+# remove duplicates
+root_neighbours = list(set(root_neighbours))
+# remove cells which have have already been checked for refinement
+root_neighbours = [x for x in root_neighbours if x not in level0_checked]
+print(root_neighbours)
+
+# assess each new root neighbour on whether they need refining
+tempTargets = []
+for cellIndex in root_neighbours:
+    midpoint = level0_midpoints[cellIndex] # midpoint of neighbour
+    distToMidpoint = np.sum((surface_points[surface_0_plus_mask] - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points whose level is above 0
+    test_surface_point = surface_points[surface_0_plus_mask[np.argmin(distToMidpoint)]] # coordinates of surface point closest to midpoint
+    hex = rInf * all_points[level0_mesh[cellIndex]] # coordinates of inflated neighbour
+    if hex_contains(hex, test_surface_point): # condition for whether neighbour needs to be refined
+        tempTargets.append(cellIndex)
+print(tempTargets)
+if len(tempTargets) == 0:
+    print("nothing else to refine")
+else:
+    level0_targets.extend(tempTargets)
+print(level0_targets)
+
+voxel1 = [("hexahedron", level0_mesh[level0_targets])]
+mesh = meshio.Mesh(points = all_points, cells = voxel1)
+meshio.write("./it2Targets.vtk", mesh, file_format="vtk", binary=False)
+
+# print(root_neighbours)
+level0_checked.extend(root_neighbours) # # add target neighbours to list of cells that needn't be checked again
+print("checked", level0_checked)
+
+# go through each neighbour that was selected and compute their neighbours
+root_neighbours = []
+for cellIndex in tempTargets:
+    root_neighbours.extend(all_root_neighbours(cellIndex))
+# remove duplicates
+root_neighbours = list(set(root_neighbours))
+# remove cells which have have already been checked for refinement
+root_neighbours = [x for x in root_neighbours if x not in level0_checked]
+print(root_neighbours)
+
+# assess each new root neighbour on whether they need refining
+tempTargets = []
+for cellIndex in root_neighbours:
+    midpoint = level0_midpoints[cellIndex] # midpoint of neighbour
+    distToMidpoint = np.sum((surface_points[surface_0_plus_mask] - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points whose level is above 0
+    test_surface_point = surface_points[surface_0_plus_mask[np.argmin(distToMidpoint)]] # coordinates of surface point closest to midpoint
+    hex = rInf * all_points[level0_mesh[cellIndex]] # coordinates of inflated neighbour
+    if hex_contains(hex, test_surface_point): # condition for whether neighbour needs to be refined
+        tempTargets.append(cellIndex)
+print(tempTargets)
+if len(tempTargets) == 0:
+    print("nothing else to refine")
+else:
+    level0_targets.extend(tempTargets)
+print(level0_targets)
+
+voxel1 = [("hexahedron", level0_mesh[level0_targets])]
+mesh = meshio.Mesh(points = all_points, cells = voxel1)
+meshio.write("./it3Targets.vtk", mesh, file_format="vtk", binary=False)
+
+level0_checked.extend(root_neighbours) # # add target neighbours to list of cells that needn't be checked again
+print("checked", level0_checked)
+
+# go through each neighbour that was selected and compute their neighbours
+root_neighbours = []
+for cellIndex in tempTargets:
+    root_neighbours.extend(all_root_neighbours(cellIndex))
+# remove duplicates
+root_neighbours = list(set(root_neighbours))
+# remove cells which have have already been checked for refinement
+root_neighbours = [x for x in root_neighbours if x not in level0_checked]
+print(root_neighbours)
+
+# assess each new root neighbour on whether they need refining
+tempTargets = []
+for cellIndex in root_neighbours:
+    midpoint = level0_midpoints[cellIndex] # midpoint of neighbour
+    distToMidpoint = np.sum((surface_points[surface_0_plus_mask] - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points whose level is above 0
+    test_surface_point = surface_points[surface_0_plus_mask[np.argmin(distToMidpoint)]] # coordinates of surface point closest to midpoint
+    hex = rInf * all_points[level0_mesh[cellIndex]] # coordinates of inflated neighbour
+    if hex_contains(hex, test_surface_point): # condition for whether neighbour needs to be refined
+        tempTargets.append(cellIndex)
+print(tempTargets)
+if len(tempTargets) == 0:
+    print("nothing else to refine")
+else:
+    level0_targets.extend(tempTargets)
+print(level0_targets)
+
+# cellIndex = b[0]
+# for cellIndex in b: # for each neighbour
+#     midpoint = level0_midpoints[cellIndex] # midpoint of neighbour
+#     distToMidpoint = np.sum((surface_points - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points
+# test_surface_point = np.argmin(distToMidpoint) # index of surface point closest to midpoint
+# hex = rInf * all_points[level0_mesh[cellIndex]] # coordinates of inflated neighbour
+# if hex_contains(hex, surface_points[test_surface_point]): # condition for whether neighbour needs to be refined
+#     level0_targets.append(cellIndex) # if condition is met, add neighbour to list of refinement targets
+#     level0_non_targets = np.delete(level0_non_targets, cellIndex) # if condition is met, remove neighbour from list of non-targets
+
+
+
+# for index in range(nPoints): # select random point on surface whose target level is above 0
+#     if pointTargetLevel[index] > 0:
+#         distToMidpoint = np.sum((surface_points[index] - level0_midpoints) ** 2, axis = 1) ** 0.5 # list of distances between level0_midpoints and random point on surface
+#         start_cell = np.argmin(distToMidpoint) # index of cell closest to selceted point on surface
+#         break
+#     else:
+#         pass
+
+# test_voxels = [("hexahedron", np.array([level0_mesh[cellIndex]]))]
+# mesh = meshio.Mesh(points = all_points, cells = test_voxels)
+# meshio.write("./test.vtk", mesh, file_format="vtk", binary=False)
+
+# for cellIndex in b:
+#     midpoint = level0_midpoints[cellIndex]
+#     distToMidpoint = np.sum((surface_points - midpoint) ** 2, axis = 1) ** 0.5
+#     test_surface_point = np.argmin(distToMidpoint)
+#     hex = rInf * level0_mesh[cellIndex]
+#     if hex_contains(hex, test_surface_point):
+#         level0_targets.append(cellIndex)
+#         level0_non_targets = np.delete(level0_non_targets, cellIndex)
+# print(level0_targets)
+
+# mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
+    # print(mask)
+#     for i, leaf in enumerate(level0_mesh):
+#         if np.any(np.in1d(leaf, mask)):
+#             l0_trans_targets.append(i)
+# ############
+# l0_meshTemp = np.delete(level0_mesh, level0_targetCells, axis = 0)
+# print(level0_mesh.shape)
+# print(l0_meshTemp.shape)
+
+# l0_trans_targets = []
+# for midpoint in level2_midpoints:
+#     distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
+
+#############################################################
+
 
 # refinement:
 # during refinement store root voxel of each cell and boolean saying whether cell is a leaf or not
@@ -416,73 +715,73 @@ newPointsTemplate = np.array([[1, 0, 0], [0, 1, 0], [1, 1, 0], [2, 1, 0], [1, 2,
 
 newLevelTemplate = np.array([[0, 0, 2, 1, 5, 6, 9, 8], [0, 0, 3, 2, 6, 7, 10, 9], [2, 3, 0, 4, 9, 10, 13, 12], [1, 2, 4, 0, 8, 9, 12, 11], [5, 6, 9, 8, 0, 14, 16, 15], [6, 7, 10, 9, 14, 0, 17, 16], [9, 10, 13, 12, 16, 17, 0, 18], [8, 9, 12, 11, 15, 16, 18, 0]])
 
-# # produce culled mesh of root voxels that contain at least one surface mesh point:
-surface_bbox = bounding_box(surface_points)
-culled_l0_points = [] # all points contained by bounding_box of surface mesh
-for i, node in enumerate(l0_points):
-    if hex_contains(surface_bbox, node):
-        culled_l0_points.append(i)
-culled_l0_mesh_ind = []
-for i, V in enumerate(z_hexas):
-    common = np.intersect1d(V, culled_l0_points, assume_unique = True)
-    if common.size > 0:
-        culled_l0_mesh_ind.append(i)
-print(culled_l0_mesh_ind)
-culled_l0_mesh = z_hexas[culled_l0_mesh_ind]
+# # # produce culled mesh of root voxels that contain at least one surface mesh point:
+# surface_bbox = bounding_box(surface_points)
+# culled_l0_points = [] # all points contained by bounding_box of surface mesh
+# for i, node in enumerate(l0_points):
+#     if hex_contains(surface_bbox, node):
+#         culled_l0_points.append(i)
+# culled_l0_mesh_ind = []
+# for i, V in enumerate(z_hexas):
+#     common = np.intersect1d(V, culled_l0_points, assume_unique = True)
+#     if common.size > 0:
+#         culled_l0_mesh_ind.append(i)
+# print(culled_l0_mesh_ind)
+# culled_l0_mesh = z_hexas[culled_l0_mesh_ind]
+#
+# culled_l0_voxels = [("hexahedron", culled_l0_mesh)]
+# mesh = meshio.Mesh(points = l0_points, cells = culled_l0_voxels)
+# meshio.write("./culled_l0_mesh.vtk", mesh, file_format="vtk", binary=False)
+#
+#
+#
+# level = 0
+# level0_targetPoints = []
+# level0_targetCells = []
+# to_refine = []
+# has_children = []
+# for i, leaf in zip(culled_l0_mesh_ind, culled_l0_mesh):
+#     tempList = []
+#     for j, target in enumerate(faceCentroids):
+#         if hex_contains(l0_points[leaf], target):
+#             tempList.append(j)
+#     level0_targetPoints.append(tempList)
+#     if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
+#         level0_targetCells.append(i)
+#         has_children.append(i)
+#         to_refine.append(i)
+#
+#
+# all_points = l0_points.copy()
+# level0_mesh = z_hexas.copy()
 
-culled_l0_voxels = [("hexahedron", culled_l0_mesh)]
-mesh = meshio.Mesh(points = l0_points, cells = culled_l0_voxels)
-meshio.write("./culled_l0_mesh.vtk", mesh, file_format="vtk", binary=False)
-
-
-
-level = 0
-level0_targetPoints = []
-level0_targetCells = []
-to_refine = []
-has_children = []
-for i, leaf in zip(culled_l0_mesh_ind, culled_l0_mesh):
-    tempList = []
-    for j, target in enumerate(faceCentroids):
-        if hex_contains(l0_points[leaf], target):
-            tempList.append(j)
-    level0_targetPoints.append(tempList)
-    if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
-        level0_targetCells.append(i)
-        has_children.append(i)
-        to_refine.append(i)
-
-
-all_points = l0_points.copy()
-level0_mesh = z_hexas.copy()
-
-# refine marked level 0 cells:
-level = 1
-level1_mesh = []
-level1_targetPoints = [] # length = number of level1 cells, each entry contains list of target points in side each level1 cell
-level1_targetCells = [] # indices in level1_mesh of cells that need refining
-for i, targetCell in enumerate(level0_targetCells):
-    # assemble refined cells
-    new_level = np.diag(level0_mesh[targetCell])
-    template = newLevelTemplate + all_points.shape[0] #- 19
-    np.fill_diagonal(template, 0)
-    new_level += template # [8 x 8]
-    level1_mesh.extend(new_level)
-    # compute new points of children (19 new points per refinement)
-    new_points = newPointsTemplate * 0.5 ** level * maxCellSize + all_points[level0_mesh[targetCell][0]]
-    all_points = np.concatenate((all_points, new_points), axis = 0)
-    # compute targetCells and targetPoints among Level1 cells:
-    for j, child in enumerate(new_level):
-        tempList = []
-        # for targetPoint in level0_targetPoints[targetCell]:
-        for targetPoint in level0_targetPoints[i]:
-            if hex_contains(all_points[child], faceCentroids[targetPoint]):
-                tempList.append(targetPoint)
-        level1_targetPoints.append(tempList)
-        if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
-            level1_targetCells.append((i * 8) + j)
-
-level1_mesh = np.array(level1_mesh)
+# # refine marked level 0 cells:
+# level = 1
+# level1_mesh = []
+# level1_targetPoints = [] # length = number of level1 cells, each entry contains list of target points in side each level1 cell
+# level1_targetCells = [] # indices in level1_mesh of cells that need refining
+# for i, targetCell in enumerate(level0_targetCells):
+#     # assemble refined cells
+#     new_level = np.diag(level0_mesh[targetCell])
+#     template = newLevelTemplate + all_points.shape[0] #- 19
+#     np.fill_diagonal(template, 0)
+#     new_level += template # [8 x 8]
+#     level1_mesh.extend(new_level)
+#     # compute new points of children (19 new points per refinement)
+#     new_points = newPointsTemplate * 0.5 ** level * maxCellSize + all_points[level0_mesh[targetCell][0]]
+#     all_points = np.concatenate((all_points, new_points), axis = 0)
+#     # compute targetCells and targetPoints among Level1 cells:
+#     for j, child in enumerate(new_level):
+#         tempList = []
+#         # for targetPoint in level0_targetPoints[targetCell]:
+#         for targetPoint in level0_targetPoints[i]:
+#             if hex_contains(all_points[child], faceCentroids[targetPoint]):
+#                 tempList.append(targetPoint)
+#         level1_targetPoints.append(tempList)
+#         if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
+#             level1_targetCells.append((i * 8) + j)
+#
+# level1_mesh = np.array(level1_mesh)
 #
 # ##############
 # temp_voxels = [("hexahedron", level1_mesh)]
@@ -498,30 +797,30 @@ level1_mesh = np.array(level1_mesh)
 # meshio.write("./level1_refinement.vtk", level1_refinement, file_format="vtk", binary=False)
 # meshio.write("./level1_refinement.msh", level1_refinement, file_format="gmsh22", binary=False)
 #
-level = 2
-level2_mesh = []
-level2_targetPoints = [] # length = number of level2 cells, each entry contains list of target points in side each level2 cell
-level2_targetCells = [] # indices in level2_mesh of cells that need refining
-for i, targetCell in enumerate(level1_targetCells):
-    # assemble refined cells
-    new_level = np.diag(level1_mesh[targetCell])
-    template = newLevelTemplate + all_points.shape[0] #- 19
-    np.fill_diagonal(template, 0)
-    new_level += template # [8 x 8]
-    level2_mesh.extend(new_level)
-    # compute new points of children (19 new points per refinement)
-    new_points = newPointsTemplate * 0.5 ** level * maxCellSize + all_points[level1_mesh[targetCell][0]]
-    all_points = np.concatenate((all_points, new_points), axis = 0)
-    # compute targetCells and targetPoints among Level1 cells:
-    for j, child in enumerate(new_level):
-        tempList = []
-        for targetPoint in level1_targetPoints[targetCell]:
-            if hex_contains(all_points[child], faceCentroids[targetPoint]):
-                tempList.append(targetPoint)
-        level2_targetPoints.append(tempList)
-        if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
-            level2_targetCells.append((i * 8) + j)
-level2_mesh = np.array(level2_mesh)
+# level = 2
+# level2_mesh = []
+# level2_targetPoints = [] # length = number of level2 cells, each entry contains list of target points in side each level2 cell
+# level2_targetCells = [] # indices in level2_mesh of cells that need refining
+# for i, targetCell in enumerate(level1_targetCells):
+#     # assemble refined cells
+#     new_level = np.diag(level1_mesh[targetCell])
+#     template = newLevelTemplate + all_points.shape[0] #- 19
+#     np.fill_diagonal(template, 0)
+#     new_level += template # [8 x 8]
+#     level2_mesh.extend(new_level)
+#     # compute new points of children (19 new points per refinement)
+#     new_points = newPointsTemplate * 0.5 ** level * maxCellSize + all_points[level1_mesh[targetCell][0]]
+#     all_points = np.concatenate((all_points, new_points), axis = 0)
+#     # compute targetCells and targetPoints among Level1 cells:
+#     for j, child in enumerate(new_level):
+#         tempList = []
+#         for targetPoint in level1_targetPoints[targetCell]:
+#             if hex_contains(all_points[child], faceCentroids[targetPoint]):
+#                 tempList.append(targetPoint)
+#         level2_targetPoints.append(tempList)
+#         if len(tempList) != 0 and np.max(targetLevel[tempList]) > level and np.max(targetLevel[tempList]) < maxLevel:
+#             level2_targetCells.append((i * 8) + j)
+# level2_mesh = np.array(level2_mesh)
 
 # ##############
 # temp_voxels = [("hexahedron", level2_mesh)]
@@ -529,18 +828,18 @@ level2_mesh = np.array(level2_mesh)
 # meshio.write("./test.vtk", tempMesh, file_format="vtk", binary=False)
 # ##############
 
-currentLevel = 2
-level2_midpoints = all_points[level2_mesh[:, 0]] + maxCellSize * 0.5 ** (currentLevel + 1)
-rInf = transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
+# currentLevel = 2
+# level2_midpoints = all_points[level2_mesh[:, 0]] + maxCellSize * 0.5 ** (currentLevel + 1)
+# rInf = transLayers * maxCellSize * 0.5 ** (currentLevel - 1)
 # ############
 # l0_meshTemp = np.delete(level0_mesh, level0_targetCells, axis = 0)
 # print(level0_mesh.shape)
 # print(l0_meshTemp.shape)
 
-l0_trans_targets = []
-for midpoint in level2_midpoints:
-    distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
-    mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
+# l0_trans_targets = []
+# for midpoint in level2_midpoints:
+#     distToMidpoint = np.sum((all_points - midpoint) ** 2, axis = 1) ** 0.5
+#     mask = np.array(np.where(distToMidpoint < rInf)).ravel() # indices of points inside area of influence
     # print(mask)
 #     for i, leaf in enumerate(level0_mesh):
 #         if np.any(np.in1d(leaf, mask)):

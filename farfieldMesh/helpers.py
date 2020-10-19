@@ -117,7 +117,7 @@ def hex_contains(hex_points, x): # points need to satisfy certain order
 def root_neighbour(target_root, direction):
     # target_root: index of root voxel
     # direction: {"U", "B", "R", "D", "F", "L"}
-    global FS
+    # global FS
     # print(FS)
     if direction == "U":
         if target_root in TS:
