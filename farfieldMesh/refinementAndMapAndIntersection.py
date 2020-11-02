@@ -1,6 +1,6 @@
 import meshio
 import numpy as np
-import pickle
+# import pickle
 # from helpers import *
 # from helpers import centroid, read_surface, get_face_normals, area, hex_contains, root_neighbour, bounding_box, triInBox
 # import helpers
@@ -110,35 +110,6 @@ def hex_contains(hex_points, x): # points need to satisfy certain order
     if x6 < 0:
         return False
     return True
-
-def root_neighbour(target_root, direction):
-    # target_root: index of root voxel
-    # direction: {"U", "B", "R", "D", "F", "L"}
-    # global FS
-    if direction == "U":
-        if target_root in TS:
-            return -1 # out of bounds
-        return target_root + nDivisions[0] * nDivisions[1]
-    if direction == "B":
-        if target_root in BS:
-            return -1 # out of bounds
-        return target_root + nDivisions[0]
-    if direction == "R":
-        if target_root in RS:
-            return -1 # out of bounds
-        return target_root + 1
-    if direction == "D":
-        if target_root in DS:
-            return -1 # out of bounds
-        return target_root - nDivisions[0] * nDivisions[1]
-    if direction == "F":
-        if target_root in FS:
-            return -1 # out of bounds
-        return target_root - nDivisions[0]
-    if direction == "L":
-        if target_root in FS:
-            return -1 # out of bounds
-        return target_root - 1
 
 def bounding_box(points):
     P0 = np.min(points, axis = 0)
@@ -272,6 +243,9 @@ def triInBox(AABB, triangle):
     else:
         return 0; # False, no overlap
     return 1; # triangle intersects all 12 planes, and box intersects normal plane
+
+
+
 
 ####################################################
 
@@ -438,6 +412,7 @@ for z in range(nDivisions[2]):
     z_hexas.extend(y_hexas + z * z_lay)
 z_hexas = np.array(z_hexas)
 
+# print("export base mesh")
 # voxel1 = [("hexahedron", z_hexas)]
 # mesh = meshio.Mesh(points = l0_points, cells = voxel1)
 # meshio.write("./basemesh.vtk", mesh, file_format="vtk", binary=False)
@@ -469,155 +444,283 @@ BS = FS + (nDivisions[0] * (nDivisions[1] - 1))
 
 
 ############################################################
-# variables at this point
-# rootIndex [n_l0_cells, 1] = [0, 1, 2, ..., n_l0_cells - 1]
-# pointTargetLevel [number of surface_points, 1]
-#################################################
-
-def all_root_neighbours(target_root):
-    # target_root: index of root voxel
-    neighbours = []
-    if target_root not in TS:
-        neighbours.append(target_root + nDivisions[0] * nDivisions[1]) # upper neighbour
-    if target_root not in BS:
-        neighbours.append(target_root + nDivisions[0]) # back neighbour
-    if target_root not in RS:
-        neighbours.append(target_root + 1) # right neighbour
-    if target_root not in DS:
-        neighbours.append(target_root - nDivisions[0] * nDivisions[1]) # down neighbour
-    if target_root not in FS:
-        neighbours.append(target_root - nDivisions[0]) # front neighbour
-    if target_root not in LS:
-        neighbours.append(target_root - 1) # left neighbour
-    return neighbours
-
-
 octreeMap = {'U': [[4, "H"], [5, "H"], [6, "H"], [7, "H"], [0, "U"], [1, "U"], [2, "U"], [3, "U"]],
              'B': [[3, "H"], [2, "H"], [1, "B"], [0, "B"], [7, "H"], [6, "H"], [5, "B"], [4, "B"]],
              'R': [[1, "H"], [0, "R"], [3, "R"], [2, "H"], [5, "H"], [4, "R"], [7, "R"], [6, "H"]],
              'D': [[4, "D"], [5, "D"], [6, "D"], [7, "D"], [0, "H"], [1, "H"], [2, "H"], [3, "H"]],
              'F': [[3, "F"], [2, "F"], [1, "H"], [0, "H"], [7, "F"], [6, "F"], [5, "H"], [4, "H"]],
              'L': [[1, "L"], [0, "H"], [3, "H"], [2, "L"], [5, "L"], [4, "H"], [7, "H"], [6, "L"]]}
+octreeMap2 = [[[4, "H"], [3, "H"], [1, "H"], [4, "D"], [3, "F"], [1, "L"]],
+              [[5, "H"], [2, "H"], [0, "R"], [5, "D"], [2, "F"], [0, "H"]],
+              [[6, "H"], [1, "B"], [3, "R"], [6, "D"], [1, "H"], [3, "H"]],
+              [[7, "H"], [0, "B"], [2, "H"], [7, "D"], [0, "H"], [2, "L"]],
+              [[0, "U"], [7, "H"], [5, "H"], [0, "H"], [7, "F"], [5, "L"]],
+              [[1, "U"], [6, "H"], [4, "R"], [1, "H"], [6, "F"], [4, "H"]],
+              [[2, "U"], [5, "B"], [7, "R"], [2, "H"], [5, "H"], [7, "H"]],
+              [[3, "U"], [4, "B"], [6, "H"], [3, "H"], [4, "H"], [6, "L"]]]
+
+
+def root_neighbour(target_root, direction):
+    # target_root: index of root voxel within rootIndex
+    # direction: {"U", "B", "R", "D", "F", "L"}
+    # returns: index of neighbour within rootIndex as interger
+    if direction == "U":
+        if target_root in TS:
+            return -1 # out of bounds
+        return target_root + nDivisions[0] * nDivisions[1]
+    if direction == "B":
+        if target_root in BS:
+            return -1 # out of bounds
+        return target_root + nDivisions[0]
+    if direction == "R":
+        if target_root in RS:
+            return -1 # out of bounds
+        return target_root + 1
+    if direction == "D":
+        if target_root in DS:
+            return -1 # out of bounds
+        return target_root - nDivisions[0] * nDivisions[1]
+    if direction == "F":
+        if target_root in FS:
+            return -1 # out of bounds
+        return target_root - nDivisions[0]
+    if direction == "L":
+        if target_root in FS:
+            return -1 # out of bounds
+        return target_root - 1
+
+def all_root_neighbours(target_root):
+    # target_root: index of root voxel within rootIndex
+    # returns: list; contains indices of all neighbours within rootIndex
+    neighbours = [-1, -1, -1, -1, -1, -1]
+    if target_root not in TS:
+        # neighbours.append(target_root + nDivisions[0] * nDivisions[1]) # upper neighbour
+        neighbours[0] = target_root + nDivisions[0] * nDivisions[1]
+    if target_root not in BS:
+        neighbours[1] = target_root + nDivisions[0] # back neighbour
+    if target_root not in RS:
+        neighbours[2] = target_root + 1 # right neighbour
+    if target_root not in DS:
+        neighbours[3] = target_root - nDivisions[0] * nDivisions[1] # down neighbour
+    if target_root not in FS:
+        neighbours[4] = target_root - nDivisions[0] # front neighbour
+    if target_root not in LS:
+        neighbours[5] = target_root - 1 # left neighbour
+    return neighbours
 
 def level1_neighbour(target, direction):
     # target: cell index within level1_mesh
     # direction: {"U", "B", "R", "D", "F", "L"}
-    # return neighbour octant and neighbour parent
-    x = list(divmod(target, 8))
-    target_octant = x[1]
-    target_parent = level0_targets[x[0]]
+    # return neighbour index within level1_mesh
+    target_octant = target % 8
+    target_parent = level0_targets[target // 8]
     map = octreeMap[direction][target_octant]
+    neighbour_octant = map[0]
     if map[1] == "H":
-        neighbour_parent = target_parent.copy()
+        return np.argwhere(level0_targets == target_parent).ravel() * 8 + neighbour_octant
     else:
         neighbour_parent = root_neighbour(target_parent, map[1])
-    neighbour_octant = map[0]
-    return neighbour_octant, neighbour_parent
-
-octreeMap2 = np.array([[[4, "H"], [3, "H"], [1, "H"], [4, "D"], [3, "F"], [1, "L"]],
-                       [[5, "H"], [2, "H"], [0, "R"], [5, "D"], [2, "F"], [0, "H"]],
-                       [[6, "H"], [1, "B"], [3, "R"], [6, "D"], [1, "H"], [3, "H"]],
-                       [[7, "H"], [0, "B"], [2, "H"], [7, "D"], [0, "H"], [2, "L"]],
-                       [[0, "U"], [7, "H"], [5, "H"], [0, "H"], [7, "F"], [5, "L"]],
-                       [[1, "U"], [6, "H"], [4, "R"], [1, "H"], [6, "F"], [4, "H"]],
-                       [[2, "U"], [5, "B"], [7, "R"], [2, "H"], [5, "H"], [7, "H"]],
-                       [[3, "U"], [4, "B"], [6, "H"], [3, "H"], [4, "H"], [6, "L"]]])
+        if neighbour_parent == -1:
+            return -1
+        return np.argwhere(level0_targets == neighbour_parent).ravel() * 8 + neighbour_octant
 
 
-# retrieving level1 neighbours:
-# cycle through neigh_parents
-# if neigh_parent in list of level0_targets, get it's index within level0_targets
-# compute level 1 neighbour index as: l0_target_index * 8 + corresponding octant number
-# add result to list of level1 neighbours and proceed as previously
-
-def all_level1_neighbours_map(target):
+def all_level1_neighbours(target):
     # target: cell index within level1_mesh
     # return level 1 neighbours in all orthogonal directions {"U", "B", "R", "D", "F", "L"}
-    x = list(divmod(target, 8))
-    target_octant = x[1]
-    target_parent = level0_targets[x[0]]
+    target_octant = target % 8
+    target_parent = level0_targets[target // 8]
     map = octreeMap2[target_octant]
-    neigh_octants = map[:, 0].astype(int)
-    neigh_parents = []
-    for direction in map[:, 1]:
+    neighs = []
+    for neighbour_octant, direction in map:
         if direction == "H":
-            neigh_parents.extend([target_parent])
+            neighs.extend(np.argwhere(level0_targets == target_parent).ravel() * 8 + neighbour_octant)
         else:
-            neigh_parents.extend([root_neighbour(target_parent, direction)])
-    return neigh_octants, neigh_parents
-def all_level1_neighbours(target):
-    neigh_octants, neigh_parents = all_level1_neighbours_map(target)
-    level1_neighbours = [] # neighbours (in ortho-directions) of start_cell
-    for parent, octant in zip(neigh_parents, neigh_octants):
-        if parent in level0_targets:
-            level1_neighbours.extend(np.argwhere(level0_targets == parent).ravel() * 8 + octant) # apparently ravel() is faster than reshape(-1)
-    return level1_neighbours
+            neigh_parent = root_neighbour(target_parent, direction)
+            if neigh_parent == -1:
+                neighs.extend(-1)
+            else:
+                neighs.extend(np.argwhere(level0_targets == neigh_parent).ravel() * 8 + neighbour_octant)
+    return neighs
 
-def all_level2_neighbours_map(target):
-    # target: cell index within level2_mesh
-    # return level 2 neighbours octants and their level1 parent in all orthogonal directions {"U", "B", "R", "D", "F", "L"}
-    x = list(divmod(target, 8))
-    target_octant = x[1]
-    target_parent = level1_targets[x[0]]
-    map = octreeMap2[target_octant]
-    neigh_octants = map[:, 0].astype(int)
-    neigh_parents = []
-    for direction in map[:, 1]:
-        if direction == "H":
-            neigh_parents.extend([target_parent])
-        else:
-            map2 = level1_neighbour(target_parent, direction)
-            neigh_parents.extend(np.argwhere(level0_targets == map2[1]).ravel() * 8 + map2[0])
-    return neigh_octants, neigh_parents
+def level2_neighbour(target, direction):
+    # target: cell index within level1_mesh
+    # direction: {"U", "B", "R", "D", "F", "L"}
+    # return neighbour index within level2_mesh
+    target_octant = target % 8
+    target_parent = level1_targets[target // 8]
+    map = octreeMap[direction][target_octant]
+    neighbour_octant = map[0]
+    if map[1] == "H":
+        return np.argwhere(level1_targets == target_parent).ravel() * 8 + neighbour_octant
+    else:
+        neighbour_parent = level1_neighbour(target_parent, map[1])
+        if neighbour_parent == -1:
+            return -1
+        return np.argwhere(level1_targets == neighbour_parent).ravel() * 8 + neighbour_octant
+
 def all_level2_neighbours(target):
-    neigh_octants, neigh_parents = all_level2_neighbours_map(target)
-    level2_neighbours = [] # neighbours (in ortho-directions) of start_cell
-    for parent, octant in zip(neigh_parents, neigh_octants):
-        if parent in level1_targets:
-            level2_neighbours.extend(np.argwhere(level1_targets == parent).ravel() * 8 + octant) # apparently ravel() is faster than reshape(-1)
-    return level2_neighbours
+    # target: cell index within level1_mesh
+    # return level 2 neighbours in all orthogonal directions {"U", "B", "R", "D", "F", "L"}
+    target_octant = target % 8
+    target_parent = level1_targets[target // 8]
+    map = octreeMap2[target_octant]
+    neighs = []
+    for neighbour_octant, direction in map:
+        if direction == "H":
+            neighs.extend(np.argwhere(level1_targets == target_parent).ravel() * 8 + neighbour_octant)
+        else:
+            neigh_parent = level1_neighbour(target_parent, direction)
+            if neigh_parent == -1:
+                neighs.extend(-1)
+            else:
+                neighs.extend(np.argwhere(level1_targets == neigh_parent).ravel() * 8 + neighbour_octant)
+    return neighs
 
-# def level2_neighbour(target, direction):
-#     # target: cell index within level1_mesh
-#     # direction: {"U", "B", "R", "D", "F", "L"}
-#     # res = level2_neighbour(target, direction) = (octant_within_level1_cell, (octant_within_root_parent, root_parent))
-#     x = list(divmod(target, 8))
-#     target_octant = x[1]
-#     target_parent = level1_targets[x[0]]
-#     map = octreeMap[direction][target_octant]
-#     if map[1] == "H":
-#         neighbour_parent = target_parent.copy()
-#     else:
-#         neighbour_parent = level1_neighbour(target_parent, map[1])
-#     neighbour_octant = map[0]
-#     return neighbour_octant, neighbour_parent
-#
-# def all_level3_neighbours_map(target):
-#     # target: cell index within level3_mesh
-#     # return level 3 neighbours octants and their level2 parents in all orthogonal directions {"U", "B", "R", "D", "F", "L"}
-#     x = list(divmod(target, 8))
-#     target_octant = x[1]
-#     target_parent = level2_targets[x[0]]
-#     map = octreeMap2[target_octant]
-#     neigh_octants = map[:, 0].astype(int)
-#     neigh_parents = []
-#     for direction in map[:, 1]:
-#         if direction == "H":
-#             neigh_parents.extend([target_parent])
-#         else:
-#             map2 = level2_neighbour(target_parent, direction)
-#             l1index = np.argwhere(level0_targets == map2[1][1]).ravel() * 8 + map2[1][0]
-#             l2index = np.argwhere(level1_targets == l1index).ravel() * 8 + map2[0]
-#             neigh_parents.extend(l2index)
-#     return neigh_octants, neigh_parents
-# def all_level3_neighbours(target):
-#     neigh_octants, neigh_parents = all_level3_neighbours_map(target)
-#     level3_neighbours = [] # neighbours (in ortho-directions) of start_cell
-#     for parent, octant in zip(neigh_parents, neigh_octants):
-#         if parent in level2_targets:
-#             level3_neighbours.extend(np.argwhere(level2_targets == parent).ravel() * 8 + octant) # apparently ravel() is faster than reshape(-1)
-#     return level3_neighbours
+def level3_neighbour(target, direction):
+    # target: cell index within level1_mesh
+    # direction: {"U", "B", "R", "D", "F", "L"}
+    # return neighbour index within level3_mesh
+    target_octant = target % 8
+    target_parent = level2_targets[target // 8]
+    map = octreeMap[direction][target_octant]
+    neighbour_octant = map[0]
+    if map[1] == "H":
+        return np.argwhere(level2_targets == target_parent).ravel() * 8 + neighbour_octant
+    else:
+        neighbour_parent = level2_neighbour(target_parent, map[1])
+        if neighbour_parent == -1:
+            return -1
+        return np.argwhere(level2_targets == neighbour_parent).ravel() * 8 + neighbour_octant
 
+def all_level3_neighbours(target):
+    # target: cell index within level1_mesh
+    # return level 3 neighbours in all orthogonal directions {"U", "B", "R", "D", "F", "L"}
+    target_octant = target % 8
+    target_parent = level2_targets[target // 8]
+    map = octreeMap2[target_octant]
+    neighs = []
+    for neighbour_octant, direction in map:
+        if direction == "H":
+            neighs.extend(np.argwhere(level2_targets == target_parent).ravel() * 8 + neighbour_octant)
+        else:
+            neigh_parent = level2_neighbour(target_parent, direction)
+            if neigh_parent == -1:
+                neighs.extend(-1)
+            else:
+                neighs.extend(np.argwhere(level2_targets == neigh_parent).ravel() * 8 + neighbour_octant)
+    return neighs
+#################################################
+
+def level0_intersects_surface(cellIndex):
+    # h = maxCellSize / 2 ** (level + 1)
+    # h = maxCellSize / 2
+    # c = level0_midpoints[cellIndex]
+    # AABB = c + h * inflationTemplate
+    AABB = all_points[level0_mesh[cellIndex]]
+    c = level0_midpoints[cellIndex]
+    dist = c - surface_points
+    dist = np.linalg.norm(dist, axis = 1)[: , None]
+    a = np.argmin(dist) # surface mesh index closest to voxel centre
+    cut_tris = triFaceIndices[a]
+    cut_quads = quadFaceIndices[a]
+    if len(cut_tris) > 0:
+        for cut_tri in cut_tris:
+            if triInBox(AABB, surface_points[surface_triangles[cut_tri]]):
+                return True
+    elif len(cut_quads) > 0:
+        for cut_quad in cut_quads:
+            quad = surface_quads[cut_quad]
+            tri1 = [quad[0], quad[1], quad[2]]
+            tri2 = [quad[1], quad[2], quad[3]]
+            if triInBox(AABB, surface_points[tri1]):
+                return True
+            elif triInBox(AABB, surface_points[tri2]):
+                return True
+    return False
+
+def level1_intersects_surface(cellIndex):
+    # h = maxCellSize / 2 ** (level + 1)
+    # h = maxCellSize / 2
+    # c = level0_midpoints[cellIndex]
+    # AABB = c + h * inflationTemplate
+    AABB = all_points[level1_mesh[cellIndex]]
+    c = level1_midpoints[cellIndex]
+    dist = c - surface_points
+    dist = np.linalg.norm(dist, axis = 1)[: , None]
+    a = np.argmin(dist) # surface mesh index closest to voxel centre
+    cut_tris = triFaceIndices[a]
+    cut_quads = quadFaceIndices[a]
+    if len(cut_tris) > 0:
+        for cut_tri in cut_tris:
+            if triInBox(AABB, surface_points[surface_triangles[cut_tri]]):
+                return True
+    elif len(cut_quads) > 0:
+        for cut_quad in cut_quads:
+            quad = surface_quads[cut_quad]
+            tri1 = [quad[0], quad[1], quad[2]]
+            tri2 = [quad[1], quad[2], quad[3]]
+            if triInBox(AABB, surface_points[tri1]):
+                return True
+            elif triInBox(AABB, surface_points[tri2]):
+                return True
+    return False
+
+def level2_intersects_surface(cellIndex):
+    # h = maxCellSize / 2 ** (level + 1)
+    # h = maxCellSize / 2
+    # c = level0_midpoints[cellIndex]
+    # AABB = c + h * inflationTemplate
+    AABB = all_points[level2_mesh[cellIndex]]
+    c = level2_midpoints[cellIndex]
+    dist = c - surface_points
+    dist = np.linalg.norm(dist, axis = 1)[: , None]
+    a = np.argmin(dist) # surface mesh index closest to voxel centre
+    cut_tris = triFaceIndices[a]
+    cut_quads = quadFaceIndices[a]
+    if len(cut_tris) > 0:
+        for cut_tri in cut_tris:
+            if triInBox(AABB, surface_points[surface_triangles[cut_tri]]):
+                return True
+    elif len(cut_quads) > 0:
+        for cut_quad in cut_quads:
+            quad = surface_quads[cut_quad]
+            tri1 = [quad[0], quad[1], quad[2]]
+            tri2 = [quad[1], quad[2], quad[3]]
+            if triInBox(AABB, surface_points[tri1]):
+                return True
+            elif triInBox(AABB, surface_points[tri2]):
+                return True
+    return False
+
+def level3_intersects_surface(cellIndex):
+    # h = maxCellSize / 2 ** (level + 1)
+    # h = maxCellSize / 2
+    # c = level0_midpoints[cellIndex]
+    # AABB = c + h * inflationTemplate
+    AABB = all_points[level3_mesh[cellIndex]]
+    c = level3_midpoints[cellIndex]
+    dist = c - surface_points
+    dist = np.linalg.norm(dist, axis = 1)[: , None]
+    a = np.argmin(dist) # surface mesh index closest to voxel centre
+    cut_tris = triFaceIndices[a]
+    cut_quads = quadFaceIndices[a]
+    if len(cut_tris) > 0:
+        for cut_tri in cut_tris:
+            if triInBox(AABB, surface_points[surface_triangles[cut_tri]]):
+                return True
+    elif len(cut_quads) > 0:
+        for cut_quad in cut_quads:
+            quad = surface_quads[cut_quad]
+            tri1 = [quad[0], quad[1], quad[2]]
+            tri2 = [quad[1], quad[2], quad[3]]
+            if triInBox(AABB, surface_points[tri1]):
+                return True
+            elif triInBox(AABB, surface_points[tri2]):
+                return True
+    return False
+
+#############################################################
 
 # level 0 refinement
 # compute influence radius
@@ -676,7 +779,67 @@ level0_checked.append(start_cell) # add targets to list of cells that needn't be
 
 root_neighbours = all_root_neighbours(start_cell) # neighbours (in ortho-directions) of start_cell
 
-# begin loop for identifying targets fro refinement:
+###################################################################
+# strategy for identifying intersecting cells:
+# start with start_cell (which should be intersecting)
+# add start_cell to level0_intersecting
+# add start_cell to level0_inter_checked
+# get neighbours of start_cell
+# add neighbours to level0_inter_neighbours
+# begin loop
+# for each neighbour in level0_inter_neighbours:
+#   check if neighbour is intersecting
+#   if yes:
+#       add neighbour to level0_intersecting_tmp
+# if level0_intersecting_tmp is empty:
+#   stop search, all intersecting cells have been identified
+# else
+#   add level0_intersecting_tmp to level0_intersecting
+# add level0_inter_neighbours to level0_inter_checked
+# reset level0_inter_neighbours
+# for each entry in level0_intersecting_tmp:
+#   get neighbour cells of each entry and add to level0_inter_neighbours
+# remove all duplicates from level0_inter_neighbours
+# remove all entries from level0_inter_neighbours that are present inside level0_inter_checked
+# reset level0_intersecting_tmp = []
+# restart loop
+
+level0_intersecting = [] # all level0_mesh indices intersecting the surface
+level0_inter_checked = [] # all level0 cell indices that have been checked for intersection
+level0_inter_neighbours = []
+level0_intersecting_tmp = []
+
+level0_intersecting.append(start_cell)
+level0_inter_checked.append(start_cell)
+level0_inter_neighbours = all_root_neighbours(start_cell)
+#begin "while True"-loop
+while True:
+    level0_intersecting_tmp = []
+    for cell in level0_inter_neighbours:
+        if level0_intersects_surface(cell):
+            level0_intersecting_tmp.append(cell)
+    if len(level0_intersecting_tmp) == 0:
+        print("all level 0 intersecting cells have been found")
+        break
+    level0_intersecting.extend(level0_intersecting_tmp)
+    level0_inter_checked.extend(level0_inter_neighbours)
+    level0_inter_neighbours = []
+    for cell in level0_intersecting_tmp:
+        level0_inter_neighbours.extend(all_root_neighbours(cell))
+    level0_inter_neighbours = list(set(level0_inter_neighbours))
+    level0_inter_neighbours = [x for x in level0_inter_neighbours if x not in level0_inter_checked]
+
+# voxel1 = [("hexahedron", level0_mesh[[start_cell]])]
+# mesh = meshio.Mesh(points = all_points, cells = voxel1)
+# meshio.write("./inter_l0_start.vtk", mesh, file_format="vtk", binary=False)
+# voxel1 = [("hexahedron", level0_mesh[level0_inter_neighbours])]
+# mesh = meshio.Mesh(points = all_points, cells = voxel1)
+# meshio.write("./inter_l0_start_neigh.vtk", mesh, file_format="vtk", binary=False)
+
+##################################################################
+
+
+# begin loop for identifying targets for refinement:
 while True:
     tempTargets = []
     for cellIndex in root_neighbours:
@@ -712,6 +875,7 @@ for targetCell in level0_mesh[level0_targets]:
     all_points = np.concatenate((all_points, chidlren_coords), axis = 0)
 level1_mesh = np.array(level1_mesh)
 
+# print("export level 1 mesh")
 # voxel1 = [("hexahedron", level1_mesh)]
 # mesh = meshio.Mesh(points = all_points, cells = voxel1)
 # meshio.write("./l1_mesh.vtk", mesh, file_format="vtk", binary=False)
@@ -730,6 +894,38 @@ level1_checked.append(start_cell) # add targets to list of cells that needn't be
 
 
 level1_neighbours = all_level1_neighbours(start_cell)
+
+#####################################################
+level1_intersecting = [] # all level0_mesh indices intersecting the surface
+level1_inter_checked = [] # all level0 cell indices that have been checked for intersection
+level1_inter_neighbours = []
+level1_intersecting_tmp = []
+
+level1_intersecting.append(start_cell)
+level1_inter_checked.append(start_cell)
+level1_inter_neighbours = all_level1_neighbours(start_cell)
+#begin "while True"-loop
+while True:
+    level1_intersecting_tmp = []
+    for cell in level1_inter_neighbours:
+        if level1_intersects_surface(cell):
+            level1_intersecting_tmp.append(cell)
+    if len(level1_intersecting_tmp) == 0:
+        print("all level 1 intersecting cells have been found")
+        break
+    level1_intersecting.extend(level1_intersecting_tmp)
+    level1_inter_checked.extend(level1_inter_neighbours)
+    level1_inter_neighbours = []
+    for cell in level1_intersecting_tmp:
+        level1_inter_neighbours.extend(all_level1_neighbours(cell))
+    level1_inter_neighbours = list(set(level1_inter_neighbours))
+    level1_inter_neighbours = [x for x in level1_inter_neighbours if x not in level1_inter_checked]
+# print(level1_intersecting)
+# voxel1 = [("hexahedron", level1_mesh[level1_intersecting])]
+# mesh = meshio.Mesh(points = all_points, cells = voxel1)
+# meshio.write("./inter_l1.vtk", mesh, file_format="vtk", binary=False)
+###################################################
+
 while True:
     tempTargets = []
     for cellIndex in level1_neighbours:
@@ -765,6 +961,7 @@ for targetCell in level1_mesh[level1_targets]:
     all_points = np.concatenate((all_points, chidlren_coords), axis = 0)
 level2_mesh = np.array(level2_mesh)
 
+# print("export level 2 mesh")
 # voxel1 = [("hexahedron", level2_mesh)]
 # mesh = meshio.Mesh(points = all_points, cells = voxel1)
 # meshio.write("./l2_mesh.vtk", mesh, file_format="vtk", binary=False)
@@ -782,6 +979,37 @@ level2_targets.append(start_cell)
 level2_checked.append(start_cell) # add targets to list of cells that needn't be checked again
 
 level2_neighbours = all_level2_neighbours(start_cell)
+
+#####################################################
+level2_intersecting = [] # all level0_mesh indices intersecting the surface
+level2_inter_checked = [] # all level0 cell indices that have been checked for intersection
+level2_inter_neighbours = []
+level2_intersecting_tmp = []
+
+level2_intersecting.append(start_cell)
+level2_inter_checked.append(start_cell)
+level2_inter_neighbours = all_level2_neighbours(start_cell)
+#begin "while True"-loop
+while True:
+    level2_intersecting_tmp = []
+    for cell in level2_inter_neighbours:
+        if level2_intersects_surface(cell):
+            level2_intersecting_tmp.append(cell)
+    if len(level2_intersecting_tmp) == 0:
+        print("all level 2 intersecting cells have been found")
+        break
+    level2_intersecting.extend(level2_intersecting_tmp)
+    level2_inter_checked.extend(level2_inter_neighbours)
+    level2_inter_neighbours = []
+    for cell in level2_intersecting_tmp:
+        level2_inter_neighbours.extend(all_level2_neighbours(cell))
+    level2_inter_neighbours = list(set(level2_inter_neighbours))
+    level2_inter_neighbours = [x for x in level2_inter_neighbours if x not in level2_inter_checked]
+# print(level2_intersecting)
+# voxel1 = [("hexahedron", level2_mesh[level2_intersecting])]
+# mesh = meshio.Mesh(points = all_points, cells = voxel1)
+# meshio.write("./inter_l2.vtk", mesh, file_format="vtk", binary=False)
+###################################################
 
 while True:
     tempTargets = []
@@ -818,6 +1046,7 @@ for targetCell in level2_mesh[level2_targets]:
     all_points = np.concatenate((all_points, chidlren_coords), axis = 0)
 level3_mesh = np.array(level3_mesh)
 
+# print("export level 3 mesh")
 # voxel1 = [("hexahedron", level3_mesh)]
 # mesh = meshio.Mesh(points = all_points, cells = voxel1)
 # meshio.write("./l3_mesh.vtk", mesh, file_format="vtk", binary=False)
@@ -835,153 +1064,146 @@ start_cell = np.argmin(distToMidpoint) # index of cell closest to selceted point
 level3_targets.append(start_cell)
 level3_checked.append(start_cell) # add targets to list of cells that needn't be checked again
 
-# level3_neighbours = all_level3_neighbours(start_cell)
+level3_neighbours = all_level3_neighbours(start_cell)
 
-#l3 targets[29, 30, 124, 25]
+#####################################################
+level3_intersecting = [] # all level0_mesh indices intersecting the surface
+level3_inter_checked = [] # all level0 cell indices that have been checked for intersection
+level3_inter_neighbours = []
+level3_intersecting_tmp = []
 
-def level1_neighbour_temp(target, direction):
-    # target: cell index within level1_mesh
-    # direction: {"U", "B", "R", "D", "F", "L"}
-    # return neighbour octant and neighbour parent
-    x = list(divmod(target, 8))
-    target_octant = x[1]
-    target_parent = level0_targets[x[0]]
-    map = octreeMap[direction][target_octant]
-    if map[1] == "H":
-        neighbour_parent = target_parent.copy()
-    else:
-        neighbour_parent = root_neighbour(target_parent, map[1])
-    neighbour_octant = map[0]
-    return [neighbour_octant, neighbour_parent]
+level3_intersecting.append(start_cell)
+level3_inter_checked.append(start_cell)
+level3_inter_neighbours = all_level3_neighbours(start_cell)
+#begin "while True"-loop
+while True:
+    level3_intersecting_tmp = []
+    for cell in level3_inter_neighbours:
+        if level3_intersects_surface(cell):
+            level3_intersecting_tmp.append(cell)
+    if len(level3_intersecting_tmp) == 0:
+        print("all level 3 intersecting cells have been found")
+        break
+    level3_intersecting.extend(level3_intersecting_tmp)
+    level3_inter_checked.extend(level3_inter_neighbours)
+    level3_inter_neighbours = []
+    for cell in level3_intersecting_tmp:
+        level3_inter_neighbours.extend(all_level3_neighbours(cell))
+    level3_inter_neighbours = list(set(level3_inter_neighbours))
+    level3_inter_neighbours = [x for x in level3_inter_neighbours if x not in level3_inter_checked]
+# print(level3_intersecting)
+voxel1 = [("hexahedron", level3_mesh[level3_intersecting])]
+mesh = meshio.Mesh(points = all_points, cells = voxel1)
+meshio.write("./inter_l3.vtk", mesh, file_format="vtk", binary=False)
+###################################################
 
-# x = level1_neighbour_temp(1, "U")
-# print(x)
-# print(type(x))
 
-def level2_neighbour(target, direction):
-    global tmp
-    # target: cell index within level1_mesh
-    # direction: {"U", "B", "R", "D", "F", "L"}
-    # res = level2_neighbour(target, direction) = (octant_within_level1_cell, (octant_within_root_parent, root_parent))
-    x = list(divmod(target, 8))
-    target_octant = x[1]
-    target_parent = level1_targets[x[0]]
-    map = octreeMap[direction][target_octant]
-    if map[1] == "H":
-        neighbour_parent = target_parent.copy()
-    else:
-        # l1_octant, neighbour_parent = level1_neighbour_temp(target_parent, map[1])
-        tmp = level1_neighbour_temp(target_parent, map[1])
-        # print(tmp)
-    neighbour_octant = map[0]
-    # neighbour_parent = list(neighbour_parent)
-    # return [neighbour_octant, l1_octant, neighbour_parent]
-    return [neighbour_octant, tmp[0], tmp[1]]
-
-# x = level2_neighbour(6, "U")
-# print(x)
-# print(type(x))
-
-def all_level3_neighbours_map(target):
-    # target: cell index within level3_mesh
-    # return level 3 neighbours octants and their level2 parents in all orthogonal directions {"U", "B", "R", "D", "F", "L"}
-    x = list(divmod(target, 8))
-    target_octant = x[1]
-    target_parent = level2_targets[x[0]]
-    # print(target_parent)
-    map = octreeMap2[target_octant]
-    # map = [octreeMap2[target_octant]]
-    # print(map)
-    neigh_octants = list(map[:, 0].astype(int))
-    # neigh_octants = map[:, 0]
-    # print(neigh_octants)
-    neigh_parents = []
-    for direction in map[:, 1]:
-        if direction == "H":
-            neigh_parents.extend([target_parent])
-        else:
-            map2 = level2_neighbour(target_parent, direction)
-            # print(map2)
-            l1index = np.argwhere(level0_targets == map2[2]).ravel() * 8 + map2[1]
-            # print(l1index)
-            l2index = np.argwhere(level1_targets == l1index).ravel() * 8 + map2[0]
-            neigh_parents.extend(l2index)
-            # print(l2index)
-            # print(neigh_parents)
-    # print(neigh_octants, neigh_parents)
-    return neigh_octants, neigh_parents
-def all_level3_neighbours(target):
-    neigh_octants, neigh_parents = all_level3_neighbours_map(target)
-    level3_neighbours = [] # neighbours (in ortho-directions) of start_cell
-    for parent, octant in zip(neigh_parents, neigh_octants):
-        if parent in level2_targets:
-            level3_neighbours.extend(np.argwhere(level2_targets == parent).ravel() * 8 + octant) # apparently ravel() is faster than reshape(-1)
-    return level3_neighbours
-
-# print(all_level3_neighbours_map(29))
-x = all_level3_neighbours(25)
-print(x)
-print(type(x))
-# print(level2_neighbour(5, "U"))
-# x, y = level2_neighbour(5, "U")
-# print(x)
-# print(y)
-# print(type(y))
-# test = all_level3_neighbours(30)
-# print(test)
-# voxel1 = [("hexahedron", level3_mesh[[25]])]
-# mesh = meshio.Mesh(points = all_points, cells = voxel1)
-# meshio.write("./l3_cell25.vtk", mesh, file_format="vtk", binary=False)
-# voxel1 = [("hexahedron", level3_mesh[x])]
-# mesh = meshio.Mesh(points = all_points, cells = voxel1)
-# meshio.write("./l3_cell25_neigh.vtk", mesh, file_format="vtk", binary=False)
-
-# tempTargets = []
-# for cellIndex in level3_neighbours:
-#     midpoint = level3_midpoints[cellIndex] # midpoint of neighbour
-#     distToMidpoint = np.sum((surface_points[surface_3_plus_mask] - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points whose level is above 0
-#     test_surface_point = surface_points[surface_3_plus_mask[np.argmin(distToMidpoint)]] # coordinates of surface point closest to midpoint
-#     hex = np.tile(midpoint, (8, 1)) + rInf * inflationTemplate # coordinates of inflated neighbour
-#     if hex_contains(hex, test_surface_point): # condition for whether neighbour needs to be refined
-#         tempTargets.append(cellIndex)
-# if len(tempTargets) == 0:
-#     print("nothing to refine")#break
-# else:
-#     level3_targets.extend(tempTargets)
-# level3_checked.extend(level3_neighbours)
-# level3_neighbours = []
-# print(tempTargets)
-# for cellIndex in tempTargets:
-#     level3_neighbours.extend(all_level3_neighbours(cellIndex))
-# level3_neighbours = list(set(level3_neighbours))
-# level3_neighbours = [x for x in level3_neighbours if x not in level3_checked]
+# surface_3_plus_mask: indices of all surface points whose target is above 3
 #
-# print(level3_neighbours)
+numIter = 0
+while True:
+    tempTargets = []
+    for cellIndex in level3_neighbours:
+        midpoint = level3_midpoints[cellIndex] # midpoint of neighbour
+        distToMidpoint = np.sum((surface_points[surface_3_plus_mask] - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points whose level is above 0
+        test_surface_point = surface_points[surface_3_plus_mask[np.argmin(distToMidpoint)]] # coordinates of surface point closest to midpoint
+        hex = np.tile(midpoint, (8, 1)) + rInf * inflationTemplate # coordinates of inflated neighbour
+        if hex_contains(hex, test_surface_point): # condition for whether neighbour needs to be refined
+            tempTargets.append(cellIndex)
+    if len(tempTargets) == 0:
+        break
+    else:
+        level3_targets.extend(tempTargets)
+    level3_checked.extend(level3_neighbours)
+    numIter += 1
+    print("level3_checked after iteration", numIter, ": ", level3_checked)
+    print("number checked level3 cells: ", len(level3_checked))
+    level3_neighbours = []
+    for cellIndex in tempTargets:
+        level3_neighbours.extend(all_level3_neighbours(cellIndex))
+    level3_neighbours = list(set(level3_neighbours))
+    level3_neighbours = [x for x in level3_neighbours if x not in level3_checked]
+# level3_non_targets = np.delete(level3_non_targets, level3_targets)
 
-# while True:
-#     tempTargets = []
-#     for cellIndex in level2_neighbours:
-#         midpoint = level2_midpoints[cellIndex] # midpoint of neighbour
-#         distToMidpoint = np.sum((surface_points[surface_2_plus_mask] - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points whose level is above 0
-#         test_surface_point = surface_points[surface_2_plus_mask[np.argmin(distToMidpoint)]] # coordinates of surface point closest to midpoint
-#         hex = np.tile(midpoint, (8, 1)) + rInf * inflationTemplate # coordinates of inflated neighbour
-#         if hex_contains(hex, test_surface_point): # condition for whether neighbour needs to be refined
-#             tempTargets.append(cellIndex)
-#     if len(tempTargets) == 0:
-#         break
-#     else:
-#         level2_targets.extend(tempTargets)
-#     level2_checked.extend(level2_neighbours)
-#     level2_neighbours = []
-#     for cellIndex in tempTargets:
-#         level2_neighbours.extend(all_level2_neighbours(cellIndex))
-#     level2_neighbours = list(set(level2_neighbours))
-#     level2_neighbours = [x for x in level2_neighbours if x not in level2_checked]
-# level2_non_targets = np.delete(level2_non_targets, level2_targets)
+if numIter == 0:
+    print("no more level3 targets to find")
+else:
+    print("restart search from new seeding cell among cells that haven't been checked yet and intersect the surface")
+    print("cycle through surface_3_plus_mask, get cell from level3_not_checked_intersecting closest to selected point, if point is contained by cell, select cell as new seed, otherwise go to next entry through surface_3_plus_mask")
+    level3_not_checked_intersecting = np.arange(level3_mesh.shape[0])
+    level3_not_checked_intersecting = np.delete(level3_not_checked_intersecting, level3_checked)
+    level3_not_checked_intersecting = np.intersect1d(level3_not_checked_intersecting, level3_intersecting, assume_unique = True)
+    # voxel1 = [("hexahedron", level3_mesh[level3_not_checked_intersecting])]
+    # mesh = meshio.Mesh(points = all_points, cells = voxel1)
+    # meshio.write("./inter_l3_not_checked.vtk", mesh, file_format="vtk", binary=False)
+    # print(level3_not_checked_intersecting)
+    for pointTarget in surface_3_plus_mask:
+        distToMidpoint = np.sum((surface_points[pointTarget] - level3_midpoints[level3_not_checked_intersecting]) ** 2, axis = 1) ** 0.5 # list of distances between level0_midpoints and random point on surface whose target level is above 0
+        a = np.argmin(distToMidpoint)
+        if hex_contains(all_points[level3_mesh[level3_not_checked_intersecting[a]]], surface_points[pointTarget]):
+            new_seed = level3_not_checked_intersecting[a]
+            break
+        else:
+            continue
+    print("new seed: ", new_seed)
+    # voxel1 = [("hexahedron", level3_mesh[[new_seed]])]
+    # mesh = meshio.Mesh(points = all_points, cells = voxel1)
+    # meshio.write("./l3_newSeed.vtk", mesh, file_format="vtk", binary=False)
+    print("add seed to target cells, retrieve its neighbours and restart loop for identifying targets")
 
-# voxel1 = [("hexahedron", level3_mesh[y])]
+    level3_targets.append(new_seed)
+    level3_checked.append(new_seed)
+
+    level3_neighbours = all_level3_neighbours(new_seed)
+
+    numIter = 0
+    while True:
+        tempTargets = []
+        for cellIndex in level3_neighbours:
+            midpoint = level3_midpoints[cellIndex] # midpoint of neighbour
+            distToMidpoint = np.sum((surface_points[surface_3_plus_mask] - midpoint) ** 2, axis = 1) ** 0.5 # distance between midpoint and surface_points whose level is above 0
+            test_surface_point = surface_points[surface_3_plus_mask[np.argmin(distToMidpoint)]] # coordinates of surface point closest to midpoint
+            hex = np.tile(midpoint, (8, 1)) + rInf * inflationTemplate # coordinates of inflated neighbour
+            if hex_contains(hex, test_surface_point): # condition for whether neighbour needs to be refined
+                tempTargets.append(cellIndex)
+        if len(tempTargets) == 0:
+            break
+        else:
+            level3_targets.extend(tempTargets)
+        level3_checked.extend(level3_neighbours)
+        numIter += 1
+        print("level3_checked after iteration", numIter, ": ", level3_checked)
+        print("number checked level3 cells: ", len(level3_checked))
+        level3_neighbours = []
+        for cellIndex in tempTargets:
+            level3_neighbours.extend(all_level3_neighbours(cellIndex))
+        level3_neighbours = list(set(level3_neighbours))
+        level3_neighbours = [x for x in level3_neighbours if x not in level3_checked]
+    print(level3_targets)
+
+    # new seed need to actually intersect surface otherwise this doesn't work
+    # distToMidpoint = np.sum((surface_points[surface_3_plus_mask[0]] - level3_midpoints_not_checked) ** 2, axis = 1) ** 0.5 # list of distances between level0_midpoints and random point on surface whose target level is above 0
+    # newSeed = np.argmin(distToMidpoint) # index of cell closest to selceted point on surface
+    # print("new seeding cell: ", newSeed)
+    # new_seed = level3_not_checked_intersecting[0]
+    # level3_targets.append(start_cell)
+    # level3_checked.append(start_cell) # add targets to list of cells that needn't be checked again
+    #
+    # level3_neighbours = all_level3_neighbours(start_cell)
+
+# print("numIter", numIter)
+
+# print(level3_targets)
+
+# print(list(pointTargetLevel))
+# print(pointTargetLevel.shape)
+# print(list(surface_3_plus_mask))
+# print(surface_3_plus_mask.shape)
+# print(list(level3_non_targets))
+
+# voxel1 = [("hexahedron", level3_mesh[[newSeed]])]
 # mesh = meshio.Mesh(points = all_points, cells = voxel1)
-# meshio.write("./l3_neigh_it1.vtk", mesh, file_format="vtk", binary=False)
-# voxel1 = [("hexahedron", level2_mesh[level2_targets])]
+# meshio.write("./l3_newSeed.vtk", mesh, file_format="vtk", binary=False)
+# voxel1 = [("hexahedron", level3_mesh[level3_targets])]
 # mesh = meshio.Mesh(points = all_points, cells = voxel1)
-# meshio.write("./l2_targets.vtk", mesh, file_format="vtk", binary=False)
+# meshio.write("./l3_targets_it2.vtk", mesh, file_format="vtk", binary=False)
